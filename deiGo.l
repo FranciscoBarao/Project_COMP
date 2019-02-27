@@ -7,6 +7,7 @@ letter          [a-z|A-Z|_]+
 %{
     int line = 0;
     int column = 0;
+    int needs_semicolon = 0;
 %}
 
 %X LINE_COMMENT  MULTI_LINE_COMMENT 
@@ -15,8 +16,8 @@ letter          [a-z|A-Z|_]+
 "//"                    {BEGIN LINE_COMMENT;}
 <LINE_COMMENT>"\n"      {BEGIN 0;}
 <LINE_COMMENT>.         {;}
-"/*"                    {BEGIN GENERAL_COMMENT;}
-<MULTI_LINE_COMMENT><<EOF>> {printf("Line %d, column %d")}
+"/*"                    {BEGIN MULTI_LINE_COMMENT;}
+<MULTI_LINE_COMMENT><<EOF>> {printf("Line, column");}
 <MULTI_LINE_COMMENT>"*/"   {BEGIN 0;}
 <MULTI_LINE_COMMENT>.      {;}
 
@@ -24,7 +25,7 @@ letter          [a-z|A-Z|_]+
 
  /*Keywords */
 "package"       {printf("PACKAGE");}
-"return"        {printf("RETURN");}
+"return"        {needs_semicolon = 1; printf("RETURN");}
 "else"          {printf("ELSE");}
 "if"            {printf("IF");}
 "for"           {printf("FOR");}
@@ -39,14 +40,14 @@ letter          [a-z|A-Z|_]+
 "string"        {printf("STRING");}
 "bool"          {printf("BOOL");}
 
-{decimal_digit}|{octal_digit}|{hex_digit}                                       {printf("INTLIT");}
-({decimal_digit}("."{decimal_digit})?{exponent}?)|("."{decimal_digit}{exponent}?) {printf("REALIT");}
+{decimal_digit}|{octal_digit}|{hex_digit}                                       {needs_semicolon = 1; printf("INTLIT");}
+({decimal_digit}("."{decimal_digit})?{exponent}?)|("."{decimal_digit}{exponent}?) {needs_semicolon = 1; printf("REALIT");}
  /*STRLIT HERE*/
 
 "++"|"--"|"break"|"case"|"chan"|"const"|"continue"|"default"|"defer"|"fallthrough"|"go"|"goto"|"import"|"interface"|"map"|"range"|"select"|"struct"|"switch"|"type" {printf("RESERVED");}
 
  /*Operators* & punctuation*/
-";"             {printf("SEMICOLON");}
+";"             {needs_semicolon = 0; printf("SEMICOLON");}
 "_"             {printf("BLANKID");}
 "+"             {printf("PLUS");}
 "-"             {printf("MINUS");}
@@ -65,18 +66,24 @@ letter          [a-z|A-Z|_]+
 "!"             {printf("NOT");}
 ","             {printf("COMMA");}
 "{"             {printf("LBRACE");}
-"}"             {printf("RBRACE");}
+"}"             {needs_semicolon = 1; printf("RBRACE");}
 "("             {printf("LPAR");}
-")"             {printf("RPAR");}
+")"             {needs_semicolon = 1; printf("RPAR");}
 "["             {printf("LSQ");}
-"]"             {printf("RSQ");}
+"]"             {needs_semicolon = 1; printf("RSQ");}
 
 
 
  /*Identifier*/
-{letter}({letter}|{decimal_digit})* {printf("ID(%s)",yytext);}
+{letter}({letter}|{decimal_digit})* {needs_semicolon = 1; 
+									 printf("ID(%s)",yytext);}
 
 .            {printf("%s",yytext);}
+\n 			 {if(needs_semicolon == 1){
+					printf("SEMICOLON\n");
+					needs_semicolon = 0;
+				}
+			}
 %%
 int main()
 {
