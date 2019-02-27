@@ -4,8 +4,8 @@ hex_digit       ("0x"|"0X")[0-9|a-f|A-F]+
 exponent        ("e"|"E")("+"|"-")?{decimal_digit}
 letter          [a-z|A-Z|_]+
 %{
-    int l = 0;
-    int column = 0;
+    int l = 1;
+    int column = 1;
     int needs_semicolon = 0;
 
     void col(){
@@ -13,11 +13,14 @@ letter          [a-z|A-Z|_]+
     }
     void line(){
         l++;
-        column=0;
+        column=1;
+    }
+    void semicollon(int x){
+        needs_semicolon = (x==1 ? 1 : 0);
     }
 %}
 
-%X LINE_COMMENT  MULTI_LINE_COMMENT 
+%X LINE_COMMENT  MULTI_LINE_COMMENT STRLIT
 %%
  /*Comments*/
 "//"                    {BEGIN LINE_COMMENT;}
@@ -31,58 +34,63 @@ letter          [a-z|A-Z|_]+
 <MULTI_LINE_COMMENT>.      {col();}
 
  /*Keywords */
-"package"       {printf("PACKAGE\n"); col();}
-"return"        {printf("RETURN\n"); col();}
-"else"          {printf("ELSE\n"); col();}
-"if"            {printf("IF\n"); col();}
-"for"           {printf("FOR\n"); col();}
-"var"           {printf("VAR\n"); col();}
-"fmt.Println"   {printf("PRINT\n"); col();}
-"func"          {printf("FUNC\n"); col();} 
-"strconv.Atoi"  {printf("PARSEINT\n"); col();}
-"os.Args"       {printf("CMDARGS\n"); col();}
+"package"       {printf("PACKAGE\n"); col(); semicollon(0);}
+"return"        {printf("RETURN\n"); col(); semicollon(0);}
+"else"          {printf("ELSE\n"); col(); semicollon(0);}
+"if"            {printf("IF\n"); col(); semicollon(0);}
+"for"           {printf("FOR\n"); col(); semicollon(0);}
+"var"           {printf("VAR\n"); col(); semicollon(0);}
+"fmt.Println"   {printf("PRINT\n"); col(); semicollon(0);}
+"func"          {printf("FUNC\n"); col(); semicollon(0);} 
+"strconv.Atoi"  {printf("PARSEINT\n"); col(); semicollon(0);}
+"os.Args"       {printf("CMDARGS\n"); col(); semicollon(0);}
 
-"int"           {printf("INT\n"); col();}
-"float32"       {printf("FLOAT32\n"); col();}
-"string"        {printf("STRING\n"); col();}
-"bool"          {printf("BOOL\n"); col();}
+"int"           {printf("INT\n"); col(); semicollon(0);}
+"float32"       {printf("FLOAT32\n"); col(); semicollon(0);}
+"string"        {printf("STRING\n"); col(); semicollon(0);}
+"bool"          {printf("BOOL\n"); col(); semicollon(0);}
 
-{decimal_digit}|{octal_digit}|{hex_digit}                                       {printf("INTLIT(%s)\n",yytext); col();}
-({decimal_digit}"."{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?) {printf("REALIT(%s)\n",yytext); col();}
- /*STRLIT HERE*/
+{decimal_digit}|{octal_digit}|{hex_digit}                                       {printf("INTLIT(%s)\n",yytext); col(); semicollon(1);}
+({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?) {printf("REALIT(%s)\n",yytext); col(); semicollon(1);}
+\"                         {BEGIN STRLIT; printf("STRLIT - ");}
+<STRLIT>\"                {BEGIN 0; col(); semicollon(1);}
+<STRLIT>[^\n\r\"""]+          {printf("%s\n",yytext); col();}
+<STRLIT><<EOF>>                 {printf("line %d, column %d: unterminated string literal\n",l,column); BEGIN 0;}
+<STRLIT>.                       {printf("line %d, column %d: invalid escape sequence (%s)\n",l,column,yytext); col(); semicollon(0);}
 
-"++"|"--"|"break"|"case"|"chan"|"const"|"continue"|"default"|"defer"|"fallthrough"|"go"|"goto"|"import"|"interface"|"map"|"range"|"select"|"struct"|"switch"|"type" {printf("RESERVED\n"); col();}
+
+"++"|"--"|"break"|"case"|"chan"|"const"|"continue"|"default"|"defer"|"fallthrough"|"go"|"goto"|"import"|"interface"|"map"|"range"|"select"|"struct"|"switch"|"type" {printf("RESERVED\n"); col(); semicollon(0);}
 
  /*Operators* & punctuation*/
-";"             {printf("SEMICOLON\n"); col();needs_semicolon=0;}
-"_"             {printf("BLANKID\n"); col();}
-"+"             {printf("PLUS\n"); col();}
-"-"             {printf("MINUS\n"); col();}
-"*"             {printf("STAR\n"); col();}
-"/"             {printf("DIV\n"); col();}
-"%"             {printf("MOD\n"); col();}
-"&&"            {printf("AND\n"); col();}
-"||"            {printf("OR\n"); col();}
-"<"             {printf("LT\n"); col();}
-"<="            {printf("LE\n"); col();}
-">"             {printf("GT\n"); col();}
-">="            {printf("GE\n"); col();}
-"="             {printf("ASSIGN\n"); col();}
-"=="            {printf("EQ\n"); col();}
-"!="            {printf("NE\n"); col();}
-"!"             {printf("NOT\n"); col();}
-","             {printf("COMMA\n"); col();}
-"{"             {printf("LBRACE\n"); col();}
-"}"             {printf("RBRACE\n"); col(); needs_semicolon=1;}
-"("             {printf("LPAR\n"); col();}
-")"             {printf("RPAR\n"); col(); needs_semicolon=1;}
-"["             {printf("LSQ\n"); col();}
-"]"             {printf("RSQ\n"); col(); needs_semicolon=1;}
+";"             {printf("SEMICOLON\n"); col();semicollon(0);}
+"_"             {printf("BLANKID\n"); col(); semicollon(0);}
+"+"             {printf("PLUS\n"); col(); semicollon(0);}
+"-"             {printf("MINUS\n"); col(); semicollon(0);}
+"*"             {printf("STAR\n"); col(); semicollon(0);}
+"/"             {printf("DIV\n"); col(); semicollon(0);}
+"%"             {printf("MOD\n"); col(); semicollon(0);}
+"&&"            {printf("AND\n"); col(); semicollon(0);}
+"||"            {printf("OR\n"); col(); semicollon(0);}
+"<"             {printf("LT\n"); col(); semicollon(0);}
+"<="            {printf("LE\n"); col(); semicollon(0);}
+">"             {printf("GT\n"); col(); semicollon(0);}
+">="            {printf("GE\n"); col(); semicollon(0);}
+"="             {printf("ASSIGN\n"); col(); semicollon(0);}
+"=="            {printf("EQ\n"); col(); semicollon(0);}
+"!="            {printf("NE\n"); col(); semicollon(0);}
+"!"             {printf("NOT\n"); col(); semicollon(0);}
+","             {printf("COMMA\n"); col(); semicollon(0);}
+"{"             {printf("LBRACE\n"); col(); semicollon(0);}
+"}"             {printf("RBRACE\n"); col(); semicollon(1);}
+"("             {printf("LPAR\n"); col(); semicollon(0);}
+")"             {printf("RPAR\n"); col(); semicollon(1);}
+"["             {printf("LSQ\n"); col(); semicollon(0);}
+"]"             {printf("RSQ\n"); col(); semicollon(1);}
 
 
 
  /*Identifier*/
-{letter}({letter}|{decimal_digit})* {printf("ID(%s)\n",yytext); col(); needs_semicolon=1;}
+{letter}({letter}|{decimal_digit})* {printf("ID(%s)\n",yytext); col(); semicollon(1);}
 
  /*Special Cases*/
 " "          {col();}
@@ -91,7 +99,7 @@ letter          [a-z|A-Z|_]+
 					needs_semicolon = 0;
 			        }
                 }
-.            {printf("line %d, column %d: illegal character (%s)\n",l,column,yytext); col();}
+.            {printf("line %d, column %d: illegal character (%s)\n",l,column,yytext); col(); semicollon(0);}
 
 
 %%
