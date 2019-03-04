@@ -60,14 +60,12 @@ letter          [a-z|A-Z|_]+
  /*Finish this*/
 \"                                      {BEGIN STRLIT;col();}
 <STRLIT>\"                              {BEGIN 0; col();}
-<STRLIT>\\                              {BEGIN SEQUENCE;col();}
-<SEQUENCE>"n"|"f"|"r"|"t"|\\|\"         {if(tokens) printf("STRLIT(\\%s) \n",yytext);col();BEGIN STRLIT;}
-<SEQUENCE>.                             {printf("Line %d, column %d: invalid escape sequence (\\%s)\n",l,column,yytext);BEGIN STRLIT;col();}
-
-<STRLIT>\n                              {printf("Line %d, column %d: unterminated string literal\n",l,column); BEGIN 0; line();}
+ /*<STRLIT>[(^\\[^n|f|r|t|\\|\"])|]+          {printf("%s \n",yytext);col();} */
+<STRLIT>[^n|f|r|t]+                          {printf("%s \n",yytext);col();}
+ /*Quero aceitar tudo menos \ seguido de algo que nao seja n-f etc*/ 
+<STRLIT>.                               {printf("fuck me\n");}
 <STRLIT><<EOF>>                         {printf("Line %d, column %d: unterminated string literal\n",l,column); BEGIN 0;}
-<STRLIT>[^\n\\\"]+                      {if(tokens) printf("STRLIT(%s) \n",yytext); col();}
-
+ 
 
  /*Operators* & punctuation*/
 ";"             {if(tokens) printf("SEMICOLON\n"); col();semicollon(0);}
@@ -101,7 +99,7 @@ letter          [a-z|A-Z|_]+
 
  /*Special Cases*/
 " "          {col();}
-\n           {line(); if(needs_semicolon == 1){
+\n|\t           {line(); if(needs_semicolon == 1){
 					if(tokens) printf("SEMICOLON\n");
 					needs_semicolon = 0;
 			        }
