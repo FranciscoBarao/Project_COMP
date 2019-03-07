@@ -4,10 +4,13 @@ hex_digit       ("0x"|"0X")[0-9|a-f|A-F]+
 exponent        ("e"|"E")("+"|"-")?{decimal_digit}
 letter          [a-z|A-Z|_]+
 %{
+    #define yygetc() getc(yyin)
+
     int l = 1;               //Var for Line
     int column = 1;          //Var for Column
     int needs_semicolon = 0; //Var for Semicolon need
     int tokens=1;            //Var for printing all tokens (-l -> 1)
+    int error = 0;
 
     void col(){
         column += yyleng;
@@ -59,13 +62,13 @@ letter          [a-z|A-Z|_]+
 
  /*Finish this*/
 \"                                      {BEGIN STRLIT;col();}
-<STRLIT>\"                              {BEGIN 0; col();}
- /*<STRLIT>[(^\\[^n|f|r|t|\\|\"])|]+          {printf("%s \n",yytext);col();} */
-<STRLIT>[^n|f|r|t]+                          {printf("%s \n",yytext);col();}
- /*Quero aceitar tudo menos \ seguido de algo que nao seja n-f etc*/ 
-<STRLIT>.                               {printf("fuck me\n");}
+<STRLIT>\"                              {if(error==0 && yyleng>0){ yytext[yyleng-1]='\0'; printf("REALIT(%s)\n",yytext);}col();BEGIN 0;}
+<STRLIT>\\                              {BEGIN SEQUENCE; yymore();col();}
+<STRLIT>.                               {yymore();col();}
 <STRLIT><<EOF>>                         {printf("Line %d, column %d: unterminated string literal\n",l,column); BEGIN 0;}
- 
+<SEQUENCE>[^fghijklmn]                  {error = 1; printf("Line %d, column %d: illegal character (\\%c)\n",l,column,yytext[yyleng-1]); col();BEGIN STRLIT;}
+<SEQUENCE>.                             {yymore();col();BEGIN STRLIT;}
+<SEQUENCE><<EOF>>                       {printf("Line %d, column %d: unterminated string literal\n",l,column); BEGIN 0;}
 
  /*Operators* & punctuation*/
 ";"             {if(tokens) printf("SEMICOLON\n"); col();semicollon(0);}
