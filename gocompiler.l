@@ -27,6 +27,7 @@ letter          [a-z|A-Z|_]+
  /*States*/
 %X LINE_COMMENT  MULTI_LINE_COMMENT STRLIT SEQUENCE
 %%
+
  /*Comments*/
 "//"                    {BEGIN LINE_COMMENT;}
 <LINE_COMMENT>"\n"      {BEGIN 0; line();}
@@ -62,13 +63,14 @@ letter          [a-z|A-Z|_]+
 
  /*Finish this*/
 \"                                      {BEGIN STRLIT;col();}
-<STRLIT>\"                              {if(error==0 && yyleng>0){ yytext[yyleng-1]='\0'; printf("REALIT(%s)\n",yytext);}col();BEGIN 0;}
+<STRLIT>\"                              {if(error==0 && yyleng>0){ yytext[yyleng-1]='\0'; printf("REALIT(%s)\n",yytext);}col();error=0;BEGIN 0;}
 <STRLIT>\\                              {BEGIN SEQUENCE; yymore();col();}
 <STRLIT>.                               {yymore();col();}
-<STRLIT><<EOF>>                         {printf("Line %d, column %d: unterminated string literal\n",l,column); BEGIN 0;}
+<STRLIT>\n                              {BEGIN 0;line();printf("Line %d, column %d: unterminated string literal\n",l,column);}
+<STRLIT><<EOF>>                         {BEGIN 0;printf("Line %d, column %d: unterminated string literal\n",l,column);return 1;}
 <SEQUENCE>[^fghijklmn]                  {error = 1; printf("Line %d, column %d: illegal character (\\%c)\n",l,column,yytext[yyleng-1]); col();BEGIN STRLIT;}
 <SEQUENCE>.                             {yymore();col();BEGIN STRLIT;}
-<SEQUENCE><<EOF>>                       {printf("Line %d, column %d: unterminated string literal\n",l,column); BEGIN 0;}
+<SEQUENCE><<EOF>>                       {BEGIN 0;printf("Line %d, column %d: unterminated string literal\n",l,column);return 1;}
 
  /*Operators* & punctuation*/
 ";"             {if(tokens) printf("SEMICOLON\n"); col();semicollon(0);}
