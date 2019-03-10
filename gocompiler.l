@@ -62,15 +62,15 @@ letter          [a-z|A-Z|_]+
 ({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALIT(%s)\n",yytext); col(); semicollon(1);}
 
  /*Finish this*/
-\"                                      {BEGIN STRLIT;col();}
-<STRLIT>\"                              {if(error==0 && yyleng>0){ yytext[yyleng-1]='\0'; printf("REALIT(%s)\n",yytext);}col();error=0;BEGIN 0;}
-<STRLIT>\\                              {BEGIN SEQUENCE; yymore();col();}
+\"                                      {col();BEGIN STRLIT;}
+<STRLIT>\"                              {if(error==0 && yyleng>0){ yytext[yyleng-1]='\0'; printf("STRLIT(\"%s\")\n",yytext); semicollon(1);}col();error=0;BEGIN 0;}
+<STRLIT>\\                              {yymore();col();BEGIN SEQUENCE;}
 <STRLIT>.                               {yymore();col();}
-<STRLIT>\n                              {BEGIN 0;line();printf("Line %d, column %d: unterminated string literal\n",l,column);}
-<STRLIT><<EOF>>                         {BEGIN 0;printf("Line %d, column %d: unterminated string literal\n",l,column);return 1;}
-<SEQUENCE>[^fghijklmn]                  {error = 1; printf("Line %d, column %d: illegal character (\\%c)\n",l,column,yytext[yyleng-1]); col();BEGIN STRLIT;}
+<STRLIT>\n                              {printf("Line %d, column %d: unterminated string literal\n",l,column);semicollon(0);line();BEGIN 0;}
+<STRLIT><<EOF>>                         {printf("Line %d, column %d: unterminated string literal\n",l,column);semicollon(0);BEGIN 0;}
+<SEQUENCE>[^fnrt\"\\]                   {printf("Line %d, column %d: illegal character (\\%c)\n",l,column,yytext[yyleng-1]);error = 1; col(); semicollon(0);BEGIN STRLIT;}
 <SEQUENCE>.                             {yymore();col();BEGIN STRLIT;}
-<SEQUENCE><<EOF>>                       {BEGIN 0;printf("Line %d, column %d: unterminated string literal\n",l,column);return 1;}
+<SEQUENCE><<EOF>>                       {printf("Line %d, column %d: unterminated string literal\n",l,column);semicollon(0);BEGIN 0;}
 
  /*Operators* & punctuation*/
 ";"             {if(tokens) printf("SEMICOLON\n"); col();semicollon(0);}
@@ -97,7 +97,6 @@ letter          [a-z|A-Z|_]+
 ")"             {if(tokens) printf("RPAR\n"); col(); semicollon(1);}
 "["             {if(tokens) printf("LSQ\n"); col(); semicollon(0);}
 "]"             {if(tokens) printf("RSQ\n"); col(); semicollon(1);}
-
 
  /*Identifier*/
 {letter}({letter}|{decimal_digit})* {if(tokens) printf("ID(%s)\n",yytext); col(); semicollon(1);}
