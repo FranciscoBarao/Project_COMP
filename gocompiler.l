@@ -1,8 +1,8 @@
 decimal_digit   [0-9]+
 octal_digit     "0"[0-7]+
-hex_digit       ("0x"|"0X")[0-9|a-f|A-F]+
+hex_digit       ("0x"|"0X")[0-9a-fA-F]+
 exponent        ("e"|"E")("+"|"-")?{decimal_digit}
-letter          [a-z|A-Z|_]+
+letter          [a-zA-Z_]+
 %{
     #define yygetc() getc(yyin)
 
@@ -29,9 +29,9 @@ letter          [a-z|A-Z|_]+
 %%
 
  /*Comments*/
-"//"                    {BEGIN LINE_COMMENT;}
+"//"                    {col();BEGIN LINE_COMMENT;}
 <LINE_COMMENT>"\n"      {BEGIN 0; line();}
-<LINE_COMMENT>.         {;}
+<LINE_COMMENT>.         {col();}
 
 "/*"                   { BEGIN MULTI_LINE_COMMENT; col();}
 <MULTI_LINE_COMMENT><<EOF>>     {printf("Line %d, column %d: unterminated comment\n",l,column); BEGIN 0;}
@@ -41,7 +41,7 @@ letter          [a-z|A-Z|_]+
 
  /*Keywords */
 "package"       {if(tokens) printf("PACKAGE\n"); col(); semicollon(0);}
-"return"        {if(tokens) printf("RETURN\n"); col(); semicollon(0);}
+"return"        {if(tokens) printf("RETURN\n"); col(); semicollon(1);}
 "else"          {if(tokens) printf("ELSE\n"); col(); semicollon(0);}
 "if"            {if(tokens) printf("IF\n"); col(); semicollon(0);}
 "for"           {if(tokens) printf("FOR\n"); col(); semicollon(0);}
@@ -59,7 +59,7 @@ letter          [a-z|A-Z|_]+
 "++"|"--"|"break"|"case"|"chan"|"const"|"continue"|"default"|"defer"|"fallthrough"|"go"|"goto"|"import"|"interface"|"map"|"range"|"select"|"struct"|"switch"|"type" {if(tokens) printf("RESERVED(%s)\n",yytext); col(); semicollon(0);}
 
 {decimal_digit}|{octal_digit}|{hex_digit}                                         {if(tokens) printf("INTLIT(%s)\n",yytext); col(); semicollon(1);}
-({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALIT(%s)\n",yytext); col(); semicollon(1);}
+({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALLIT(%s)\n",yytext); col(); semicollon(1);}
 
  /*Finish this*/
 \"                                      {col();BEGIN STRLIT;}
@@ -102,12 +102,13 @@ letter          [a-z|A-Z|_]+
 {letter}({letter}|{decimal_digit})* {if(tokens) printf("ID(%s)\n",yytext); col(); semicollon(1);}
 
  /*Special Cases*/
-" "          {col();}
-\n|\t           {line(); if(needs_semicolon == 1){
+" "|"\t"          {col();}
+\n           {line(); if(needs_semicolon == 1){
 					if(tokens) printf("SEMICOLON\n");
 					needs_semicolon = 0;
 			        }
                 }
+
 <<EOF>>      { if(needs_semicolon == 1){
                 if(tokens) printf("SEMICOLON\n"); 
                 }
