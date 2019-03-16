@@ -1,10 +1,24 @@
-#All compiles everything
+#Flag -g -> Gera automato em imagem (.dot)
+#Flag -v -> Gera Cases Output (.output)
+YACCFLAGS = -v -g 
 
-all: compile run
 
-compile: gocompiler.l lex.yy.c
+all: compile_lex compile_yacc run
+
+compile_lex: gocompiler.l lex.yy.c
 		lex gocompiler.l
 		clang-3.9 -o main lex.yy.c
+
+compile_yacc: gocompiler.l gocompiler.y y.tab.c lex.yy.c
+		lex gocompiler.l
+		yacc gocompiler.y
+		gcc -o  main y.tab.c lex.yy.c
+
+		
+object_flags: y.tab.c ylex.yy.c
+		gcc -o  $(YACCFLAGS) main y.tab.c lex.yy.c
+
+
 run:
 		./main
 run_test:
