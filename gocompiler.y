@@ -12,10 +12,15 @@
  
 calc: expression                        {printf("Hello World\n", $1);}
 
+primal_expression
+    : LPAR expression RPAR      {$$ = $2;}
+    |INTLIT                     {$$ = $1;}
+    |REALLIT                    {$$ = $1;}
+    |ID                         {$$ = $1;}
+    ;
+
 expression 
-    :   LPAR expression RPAR                {$$ = $2;}
-    
-    |   expression OR expression            {$$ = $1 | $2;}
+    :   expression OR expression            {$$ = $1 | $2;}
     |   expression AND expression           {$$ = $1 && $2;}
 
     |   expression LT expression            {$$ = $1 < $2;}
@@ -29,15 +34,19 @@ expression
     |   NOT expression                      {$$ = !$2;}
     |   PLUS expression                     {$$ = +$2;}
 
-
-    |   expression PLUS expression          {$$ = $1 + $2;}
-    |   expression MINUS expression         {$$ = $1 - $2;}
-    |   expression STAR expression          {$$ = $1 * $2;}
-    |   expression DIV expression           {$$ = $1 / $2;}
-    |   expression MOD expression           {$$ = $1 % $2;}
-
-    |   INTLIT | REALLIT | ID               {$$ = $1;}         
+    |   expression PLUS  math_expression          {$$ = $1 + $2;}
+    |   expression MINUS math_expression         {$$ = $1 - $2;}
+    |   math_expression
     ;   
+
+math_expression
+    :   math_expression STAR primal_expression   {$$ = $1 * $2;}
+    |   math_expression DIV  primal_expression   {$$ = $1 / $2;}
+    |   math_expression MOD  primal_expression   {$$ = $1 % $2;} 
+    |   primal_expression
+    ;
+
+
 %%
 
 int main() {
