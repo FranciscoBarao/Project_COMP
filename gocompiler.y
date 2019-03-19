@@ -11,23 +11,77 @@
 
 %%
  
-calc: math_expression                        {printf("Hello World\n", $1);}
 
-    
+program 
+    :   PACKAGE ID SEMICOLON declarations
+    ;
+
+declarations
+    :   variable_declaration SEMICOLON
+    |   function_declaration SEMICOLON
+    ;
+
+
+function_declaration
+    :   FUNC ID LPAR RPAR function_body
+    |   FUNC ID LPAR parameters RPAR function_body
+    |   FUNC ID LPAR RPAR type function_body
+    |   FUNC ID LPAR parameters RPAR type function_body
+    ;
+
+variable_declaration
+    :   VAR variable_specification
+    |   VAR LPAR variable_specification SEMICOLON RPAR
+    ;
+
+variable_specification
+    :   ID id_list
+    ;
+
+id_list 
+    :   type  
+    |   COMMA ID id_list    
+    ;
+
+parameters  
+    :   ID parameters_list
+    ;
+
+parameters_list
+    :   type
+    |   type COMMA ID parameters_list
+    ;
+
 type
     :   INT 
     |   FLOAT32
     |   STRING
     |   BOOL
     ;
-    
-variable_specification
-    :   ID id_list type   
+
+function_body
+    :
+    |   LBRACE RBRACE
+    |   LBRACE variables_statements RBRACE
     ;
 
-id_list 
-    :   COMMA ID id_list    
+
+statement
+    :   ID ASSIGN expression
     ;
+
+
+
+
+variables_statements
+    :   variables_statements SEMICOLON
+    |   variables_statements variable_declaration SEMICOLON
+    |   variables_statements statement SEMICOLON
+    |   variables_statements variable_declaration statement SEMICOLON
+    ;
+
+
+
 
 primal_expression
     :   LPAR math_expression RPAR      {$$ = $2;}
@@ -47,7 +101,7 @@ math_expression
 math2_expression
     :   math2_expression STAR primal_expression   {$$ = $1 * $2;}
     |   math2_expression DIV  primal_expression   {$$ = $1 / $2;}
-    |   math2_expression MOD  primal_expression   {$$ = $1 % $2;} 
+    |   math2_expression MOD  primal_expression   {$$ = $1 % $2;}
     |   primal_expression
     ;
 
