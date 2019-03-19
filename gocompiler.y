@@ -4,14 +4,19 @@
     void yyerror (const char *s);
 
 %}
-
-%token INTLIT, REALLIT,ID
-//Operators & Ponctuation
-%token OR,AND,LT,GT,EQ,NE,LE,GE,PLUS,MINUS,STAR,DIV,MOD,NOT,MINUS,PLUS
+//Values
+%token INTLIT REALLIT STRLIT ID
+//Variables
+%token INT FLOAT32 STRING BOOL
+//Operators
+%token OR AND LT GT EQ NE LE GE 
+//Ponctuation
+%token PLUS MINUS STAR DIV MOD NOT
+%token SEMICOLON BLANKID ASSIGN COMMA LBRACE RBRACE LPAR RPAR LSQ RSQ
+//Keyword
+%token PACKAGE RETURN ELSE IF FOR VAR PRINT FUNC PARSEINT CMDARGS RESERVED
 
 %%
- 
-
 program 
     :   PACKAGE ID SEMICOLON declarations
     ;
@@ -70,18 +75,12 @@ statement
     :   ID ASSIGN expression
     ;
 
-
-
-
 variables_statements
     :   variables_statements SEMICOLON
     |   variables_statements variable_declaration SEMICOLON
     |   variables_statements statement SEMICOLON
     |   variables_statements variable_declaration statement SEMICOLON
     ;
-
-
-
 
 primal_expression
     :   LPAR math_expression RPAR      {$$ = $2;}
