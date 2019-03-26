@@ -69,7 +69,7 @@ letter          [a-zA-Z_]+
 ({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALLIT(%s)\n",yytext); col(); semicollon(1);}
 
  /*Finish this*/
-\"                                      {column_error = column; line_error=l; col(); BEGIN STRLIT;}
+\"                                      {if(error==1){error=0;} column_error = column; line_error=l; col(); BEGIN STRLIT;}
 <STRLIT>\"                              {if(error==0 && yyleng>0){ yytext[yyleng-1]='\0'; printf("STRLIT(\"%s\")\n",yytext); semicollon(1);}col();error=0;BEGIN 0;}
 <STRLIT>\\                              {yymore(); escape_line_error=l; escape_col_error=column+yyleng-1; BEGIN SEQUENCE;}
 <STRLIT>.                               {yymore();}
