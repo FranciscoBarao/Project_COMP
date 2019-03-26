@@ -6,7 +6,7 @@
 %}
 %define parse.error verbose
 //Values
-%token INTLIT REALLIT Strlit ID
+%token INTLIT REALLIT STRLIT ID
 //Variables
 %token INT FLOAT32 STRING BOOL
 //Operators
@@ -26,9 +26,6 @@
 %left DIV MOD STAR
 %left LPAR
 %right flag
-
-
-
 
 /*
 expression:
@@ -80,7 +77,6 @@ or_and_expression:
     |   or_and_expression OR equality_expression  {printf("OR expression\n");}
     |   or_and_expression AND equality_expression {printf("AND expression\n");}
     ;
-
 */
 %%
 program:  
@@ -186,7 +182,7 @@ union_statement:
 
 str_statement:
         PRINT LPAR expression RPAR     {printf("STR statement1\n");}
-    |   PRINT LPAR Strlit RPAR          {printf("STR statement2\n");}
+    |   PRINT LPAR STRLIT RPAR          {printf("STR statement2\n");}
     ;
 
 parse_arguments:
