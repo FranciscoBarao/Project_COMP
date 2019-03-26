@@ -50,30 +50,30 @@ letter          [a-zA-Z_]+
 <MULTI_LINE_COMMENT>.           {col();}
 
  /*Keywords */
-"package"       {if(tokens) printf("PACKAGE\n"); col(); semicollon(0); return PACKAGE;}
-"return"        {if(tokens) printf("RETURN\n"); col(); semicollon(1); return RETURN;}
-"else"          {if(tokens) printf("ELSE\n"); col(); semicollon(0); return ELSE;}
-"if"            {if(tokens) printf("IF\n"); col(); semicollon(0); return IF;}
-"for"           {if(tokens) printf("FOR\n"); col(); semicollon(0); return FOR;}
-"var"           {if(tokens) printf("VAR\n"); col(); semicollon(0); return VAR;}
-"fmt.Println"   {if(tokens) printf("PRINT\n"); col(); semicollon(0); return PRINT;}
-"func"          {if(tokens) printf("FUNC\n"); col(); semicollon(0); return FUNC;} 
-"strconv.Atoi"  {if(tokens) printf("PARSEINT\n"); col(); semicollon(0); return PARSEINT;}
-"os.Args"       {if(tokens) printf("CMDARGS\n"); col(); semicollon(0); return CMDARGS;}
+"package"       {if(tokens) printf("PACKAGE\n"); col(); semicollon(0); if(!tokens) return PACKAGE;}
+"return"        {if(tokens) printf("RETURN\n"); col(); semicollon(1); if(!tokens) return RETURN;}
+"else"          {if(tokens) printf("ELSE\n"); col(); semicollon(0); if(!tokens) return ELSE;}
+"if"            {if(tokens) printf("IF\n"); col(); semicollon(0); if(!tokens) return IF;}
+"for"           {if(tokens) printf("FOR\n"); col(); semicollon(0); if(!tokens) return FOR;}
+"var"           {if(tokens) printf("VAR\n"); col(); semicollon(0); if(!tokens) return VAR;}
+"fmt.Println"   {if(tokens) printf("PRINT\n"); col(); semicollon(0); if(!tokens) return PRINT;}
+"func"          {if(tokens) printf("FUNC\n"); col(); semicollon(0); if(!tokens) return FUNC;} 
+"strconv.Atoi"  {if(tokens) printf("PARSEINT\n"); col(); semicollon(0); if(!tokens) return PARSEINT;}
+"os.Args"       {if(tokens) printf("CMDARGS\n"); col(); semicollon(0); if(!tokens) return CMDARGS;}
 
-"int"           {if(tokens) printf("INT\n"); col(); semicollon(0); return INT;}
-"float32"       {if(tokens) printf("FLOAT32\n"); col(); semicollon(0); return FLOAT32;}
-"string"        {if(tokens) printf("STRING\n"); col(); semicollon(0); return STRING;}
-"bool"          {if(tokens) printf("BOOL\n"); col(); semicollon(0); return BOOL;}
+"int"           {if(tokens) printf("INT\n"); col(); semicollon(0); if(!tokens) return INT;}
+"float32"       {if(tokens) printf("FLOAT32\n"); col(); semicollon(0); if(!tokens) return FLOAT32;}
+"string"        {if(tokens) printf("STRING\n"); col(); semicollon(0); if(!tokens) return STRING;}
+"bool"          {if(tokens) printf("BOOL\n"); col(); semicollon(0); if(!tokens) return BOOL;}
 
-"++"|"--"|"break"|"case"|"chan"|"const"|"continue"|"default"|"defer"|"fallthrough"|"go"|"goto"|"import"|"interface"|"map"|"range"|"select"|"struct"|"switch"|"type" {if(tokens) printf("RESERVED(%s)\n",yytext); col(); semicollon(0); return RESERVED;}
+"++"|"--"|"break"|"case"|"chan"|"const"|"continue"|"default"|"defer"|"fallthrough"|"go"|"goto"|"import"|"interface"|"map"|"range"|"select"|"struct"|"switch"|"type" {if(tokens) printf("RESERVED(%s)\n",yytext); col(); semicollon(0); if(!tokens) return RESERVED;}
 
-{decimal_digit}|{octal_digit}|{hex_digit}                                         {if(tokens) printf("INTLIT(%s)\n",yytext); col(); semicollon(1);yylval = atoi(yytext); return INTLIT;}
-({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALLIT(%s)\n",yytext); col(); semicollon(1); return REALLIT;}
+{decimal_digit}|{octal_digit}|{hex_digit}                                         {if(tokens) printf("INTLIT(%s)\n",yytext); col(); semicollon(1); if(!tokens) return INTLIT;}
+({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALLIT(%s)\n",yytext); col(); semicollon(1); if(!tokens) return REALLIT;}
 
 
 \"                                      {if(error==1){error=0;} column_error = column; line_error=l; col(); BEGIN STR_STATE;}
-<STR_STATE>\"                              {if(error==0 && yyleng>0){ yytext[yyleng-1]='\0'; printf("STRLIT(\"%s\")\n",yytext);  semicollon(1); return STRLIT;}col();error=0;BEGIN 0;}
+<STR_STATE>\"                              {if(error==0 && yyleng>0){ yytext[yyleng-1]='\0'; printf("STRLIT(\"%s\")\n",yytext);  semicollon(1); if(!tokens) return STRLIT;}col();error=0;BEGIN 0;}
 <STR_STATE>\\                              {yymore(); escape_line_error=l; escape_col_error=column+yyleng-1; BEGIN SEQUENCE;}
 <STR_STATE>.                               {yymore();}
 <STR_STATE>\n                              {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line();BEGIN 0;}
@@ -83,48 +83,49 @@ letter          [a-zA-Z_]+
 <SEQUENCE><<EOF>>                       {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);return 1;}
 
  /*Operators* & punctuation*/
-";"             {if(tokens) printf("SEMICOLON\n"); col();semicollon(0); return SEMICOLON;}
-"_"             {if(tokens) printf("BLANKID\n"); col(); semicollon(0); return BLANKID;}
-"+"             {if(tokens) printf("PLUS\n"); col(); semicollon(0); return PLUS;}
-"-"             {if(tokens) printf("MINUS\n"); col(); semicollon(0); return MINUS;}
-"*"             {if(tokens) printf("STAR\n"); col(); semicollon(0); return STAR;}
-"/"             {if(tokens) printf("DIV\n"); col(); semicollon(0); return DIV;}
-"%"             {if(tokens) printf("MOD\n"); col(); semicollon(0); return MOD;}
-"&&"            {if(tokens) printf("AND\n"); col(); semicollon(0); return AND;}
-"||"            {if(tokens) printf("OR\n"); col(); semicollon(0); return OR;}
-"<"             {if(tokens) printf("LT\n"); col(); semicollon(0); return LT;}
-"<="            {if(tokens) printf("LE\n"); col(); semicollon(0); return LE;}
-">"             {if(tokens) printf("GT\n"); col(); semicollon(0); return GT;}
-">="            {if(tokens) printf("GE\n"); col(); semicollon(0); return GE;}
-"="             {if(tokens) printf("ASSIGN\n"); col(); semicollon(0); return ASSIGN;}
-"=="            {if(tokens) printf("EQ\n"); col(); semicollon(0); return EQ;}
-"!="            {if(tokens) printf("NE\n"); col(); semicollon(0); return NE;}
-"!"             {if(tokens) printf("NOT\n"); col(); semicollon(0); return NOT;}
-","             {if(tokens) printf("COMMA\n"); col(); semicollon(0); return COMMA;}
-"{"             {if(tokens) printf("LBRACE\n"); col(); semicollon(0); return LBRACE;}
-"}"             {if(tokens) printf("RBRACE\n"); col(); semicollon(1); return RBRACE;}
-"("             {if(tokens) printf("LPAR\n"); col(); semicollon(0); return LPAR;}
-")"             {if(tokens) printf("RPAR\n"); col(); semicollon(1); return RPAR;}
-"["             {if(tokens) printf("LSQ\n"); col(); semicollon(0); return LSQ;}
-"]"             {if(tokens) printf("RSQ\n"); col(); semicollon(1); return RSQ;}
+";"             {if(tokens) printf("SEMICOLON\n"); col();semicollon(0); if(!tokens) return SEMICOLON;}
+"_"             {if(tokens) printf("BLANKID\n"); col(); semicollon(0); if(!tokens) return BLANKID;}
+"+"             {if(tokens) printf("PLUS\n"); col(); semicollon(0); if(!tokens) return PLUS;}
+"-"             {if(tokens) printf("MINUS\n"); col(); semicollon(0); if(!tokens) return MINUS;}
+"*"             {if(tokens) printf("STAR\n"); col(); semicollon(0); if(!tokens) return STAR;}
+"/"             {if(tokens) printf("DIV\n"); col(); semicollon(0); if(!tokens) return DIV;}
+"%"             {if(tokens) printf("MOD\n"); col(); semicollon(0); if(!tokens) return MOD;}
+"&&"            {if(tokens) printf("AND\n"); col(); semicollon(0); if(!tokens) return AND;}
+"||"            {if(tokens) printf("OR\n"); col(); semicollon(0); if(!tokens) return OR;}
+"<"             {if(tokens) printf("LT\n"); col(); semicollon(0); if(!tokens) return LT;}
+"<="            {if(tokens) printf("LE\n"); col(); semicollon(0); if(!tokens) return LE;}
+">"             {if(tokens) printf("GT\n"); col(); semicollon(0); if(!tokens) return GT;}
+">="            {if(tokens) printf("GE\n"); col(); semicollon(0); if(!tokens) return GE;}
+"="             {if(tokens) printf("ASSIGN\n"); col(); semicollon(0); if(!tokens) return ASSIGN;}
+"=="            {if(tokens) printf("EQ\n"); col(); semicollon(0); if(!tokens) return EQ;}
+"!="            {if(tokens) printf("NE\n"); col(); semicollon(0); if(!tokens) return NE;}
+"!"             {if(tokens) printf("NOT\n"); col(); semicollon(0); if(!tokens) return NOT;}
+","             {if(tokens) printf("COMMA\n"); col(); semicollon(0); if(!tokens) return COMMA;}
+"{"             {if(tokens) printf("LBRACE\n"); col(); semicollon(0); if(!tokens) return LBRACE;}
+"}"             {if(tokens) printf("RBRACE\n"); col(); semicollon(1); if(!tokens) return RBRACE;}
+"("             {if(tokens) printf("LPAR\n"); col(); semicollon(0); if(!tokens) return LPAR;}
+")"             {if(tokens) printf("RPAR\n"); col(); semicollon(1); if(!tokens) return RPAR;}
+"["             {if(tokens) printf("LSQ\n"); col(); semicollon(0); if(!tokens) return LSQ;}
+"]"             {if(tokens) printf("RSQ\n"); col(); semicollon(1); if(!tokens) return RSQ;}
 
  /*Identifier*/
-{letter}({letter}|{decimal_digit})* {if(tokens) printf("ID(%s)\n",yytext); col(); semicollon(1); return ID;}
+{letter}({letter}|{decimal_digit})* {if(tokens) printf("ID(%s)\n",yytext); col(); semicollon(1); if(!tokens) return ID;}
 
  /*Special Cases*/
 " "|"\t"          {col();}
 \n           {line(); if(needs_semicolon == 1){
 					if(tokens) printf("SEMICOLON\n");
 					needs_semicolon = 0;
-                    return SEMICOLON;
+                    if(!tokens) return SEMICOLON;
 			        }
                 }
 
 <<EOF>>      { if(needs_semicolon == 1){
                 if(tokens){ 
                     printf("SEMICOLON\n"); 
-                    return SEMICOLON;
                     }
+
+                if(!tokens) return SEMICOLON;
                 }
                 return 0;
                 }
@@ -133,10 +134,17 @@ letter          [a-zA-Z_]+
 %%
 
 
+int return_line(){
+    return l;
+}
+int return_column(){
+    return column-yyleng;
+}
+
 
 int lex_initiate(int argc, char* argv[]){
         if(argv[1] != NULL && strcmp(argv[1] , "-l")==0) {
-        tokens = 1;
+            tokens = 1;
         }
     return 0;
 }

@@ -24,6 +24,6 @@ compile_main: y.tab.c lex.yy.c
 run: 
 		./main -l
 run_test:
-		./main -l < Test
+		./main < Test
 clean: 
 		rm -rf *o main
