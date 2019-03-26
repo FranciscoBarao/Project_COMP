@@ -29,57 +29,6 @@
 %left LPAR
 %right flag
 
-/*
-expression:
-        or_and_expression                                { ;}
-    ;
-
-
-primal_expression:  
-        LPAR math_expression RPAR       { ;}
-    |   INTLIT                          { ;}
-    |   REALLIT                         { ;}
-    |   ID                              { ;}
-    ;
-
-
-math2_expression:
-        math2_expression STAR primal_expression   { ;}
-    |   math2_expression DIV  primal_expression   { ;}
-    |   math2_expression MOD  primal_expression   { ;}
-    |   primal_expression                         { ;}
-    ;
-
-math_expression: 
-        MINUS math_expression                       { ;}
-    |   PLUS math_expression                        { ;}
-    |   math2_expression PLUS  math_expression      { ;}
-    |   math2_expression MINUS math_expression      { ;}
-    |   math2_expression                            { ;}
-    ; 
-
-
-compare_expression:
-        math_expression                         { ;}
-    |   compare_expression LT math_expression   { ;}
-    |   compare_expression GT math_expression   { ;}
-    |   compare_expression LE math_expression   { ;}
-    |   compare_expression GE math_expression   { ;}
-    ;
-
-equality_expression:
-        compare_expression                          { ;}
-    |   NOT equality_expression                     { ;}
-    |   compare_expression EQ equality_expression   { ;} /*TROQUEI COMPARE E EQUALITY PARA ARVORE DESCER SEMPRE PELA DIREITA... WORKS?!?!?!
-    |   compare_expression NE equality_expression   { ;}
-    ;
-
-or_and_expression:
-        equality_expression                       { ;}
-    |   or_and_expression OR equality_expression  { ;}
-    |   or_and_expression AND equality_expression { ;}
-    ;
-*/
 %%
 program:  
         PACKAGE ID SEMICOLON declarations   { ;}
