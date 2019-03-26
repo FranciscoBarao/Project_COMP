@@ -56,5 +56,7 @@ lex.yy.c
 y.tab.c
 y.tab.h
 main
+y.dot
+y.output
 
 Test
