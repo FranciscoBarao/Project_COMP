@@ -3,24 +3,27 @@
 YACCFLAGS = -v -g 
 
 
-all: compile_yacc
+all: compile_yacc compile_main 
 
 compile_lex: Meta1/gocompiler.l lex.yy.c
 		lex Meta1/gocompiler.l
 		clang-3.9 -o main lex.yy.c
 
-compile_yacc: gocompiler.l gocompiler.y y.tab.c lex.yy.c
+compile_yacc: gocompiler.l gocompiler.y 
 		lex gocompiler.l
 		yacc -d gocompiler.y
-		gcc -o  main y.tab.c lex.yy.c
 
-		
-object_flags: y.tab.c ylex.yy.c
-		gcc -o  $(YACCFLAGS) main y.tab.c lex.yy.c
+compile_yacc_flags: gocompiler.l gocompiler.y 
+		lex gocompiler.l
+		yacc -d ${YACCFLAGS} gocompiler.y
 
-run:
-		./main
+
+compile_main: y.tab.c lex.yy.c
+	gcc -o  main y.tab.c lex.yy.c
+
+run: 
+		./main -l
 run_test:
-		./main < Test
+		./main -l < Test
 clean: 
 		rm -rf *o main

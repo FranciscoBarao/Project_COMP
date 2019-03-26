@@ -10,7 +10,7 @@ letter          [a-zA-Z_]+
     int l = 1;               //Var for Line
     int column = 1;          //Var for Column
     int needs_semicolon = 0; //Var for Semicolon need
-    int tokens=1;            //Var for printing all tokens (-l -> 1)
+    int tokens=0;            //Var for printing all tokens (-l -> 1)
     int error = 0;
     int column_error = 0;   //Var to save column in error case
     int line_error = 0;     //Var to save line in error case
@@ -65,7 +65,7 @@ letter          [a-zA-Z_]+
 
 "++"|"--"|"break"|"case"|"chan"|"const"|"continue"|"default"|"defer"|"fallthrough"|"go"|"goto"|"import"|"interface"|"map"|"range"|"select"|"struct"|"switch"|"type" {if(tokens) printf("RESERVED(%s)\n",yytext); col(); semicollon(0); return RESERVED;}
 
-{decimal_digit}|{octal_digit}|{hex_digit}                                         {if(tokens) printf("INTLIT(%s)\n",yytext); col(); semicollon(1); return INTLIT;}
+{decimal_digit}|{octal_digit}|{hex_digit}                                         {if(tokens) printf("INTLIT(%s)\n",yytext); col(); semicollon(1);yylval = atoi(yytext); return INTLIT;}
 ({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALLIT(%s)\n",yytext); col(); semicollon(1); return REALLIT;}
 
  /*Finish this*/
@@ -75,7 +75,7 @@ letter          [a-zA-Z_]+
 <STRLIT>.                               {yymore();col();}
 <STRLIT>\n                              {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line();BEGIN 0;}
 <STRLIT><<EOF>>                         {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);return 1;}
-<SEQUENCE>[^fnrt\"\\]                   {printf("Line %d, column %d: invalid escape sequence (\\%c)\n",escape_line_error,escape_col_error,yytext[yyleng-1]);error = 1; col();BEGIN STRLIT;}
+<SEQUENCE>[^fnrt\"\\]                   {printf("Line %d, column %d: invalid escape sequence (\\%c)\n",line_error,column_error,yytext[yyleng-1]);error = 1; col();BEGIN STRLIT;}
 <SEQUENCE>.                             {yymore();BEGIN STRLIT;}
 <SEQUENCE><<EOF>>                       {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);return 1;}
 
@@ -113,11 +113,15 @@ letter          [a-zA-Z_]+
 \n           {line(); if(needs_semicolon == 1){
 					if(tokens) printf("SEMICOLON\n");
 					needs_semicolon = 0;
+                    return SEMICOLON;
 			        }
                 }
 
 <<EOF>>      { if(needs_semicolon == 1){
-                if(tokens) printf("SEMICOLON\n"); 
+                if(tokens){ 
+                    printf("SEMICOLON\n"); 
+                    return SEMICOLON;
+                    }
                 }
                 return 0;
                 }
@@ -125,19 +129,16 @@ letter          [a-zA-Z_]+
 .            {printf("Line %d, column %d: illegal character (%s)\n",l,column,yytext); col(); BEGIN 0;}
 %%
 
-int main(int argc, char* argv[])
-{
-    if(argv[1] != NULL) {
+
+
+int lex_initiate(int argc, char* argv[]){
+        if(argv[1] != NULL && strcmp(argv[1] , "-l")==0) {
         tokens = 1;
         }
-    yyparse();
     return 0;
 }
 
+
 int yywrap(){
 return 1;
-}
-
-void yyerror (const char *s) { 
-    printf ("s-> %s: %s\n", s, yytext);
 }
