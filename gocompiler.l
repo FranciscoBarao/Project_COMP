@@ -17,6 +17,7 @@ letter          [a-zA-Z_]+
     int escape_col_error = 0;
     int escape_line_error = 0;
     int end_of_file=0;
+    int is_str = 0;
 
 
     void col(){
@@ -74,14 +75,14 @@ letter          [a-zA-Z_]+
 ({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALLIT(%s)\n",yytext); col(); semicollon(1); if(!tokens) return REALLIT;}
 
 
-\"                                      {BEGIN STR_STATE;if(error==1){error=0;} column_error = column; line_error=l; col();}
-<STR_STATE>\"                              {BEGIN 0;if(error==0 && yyleng>0){ yytext[yyleng-1]='\0';if(tokens) printf("STRLIT(\"%s\")\n",yytext);  semicollon(1); if(!tokens) return STRLIT;}col();error=0;}
+\"                                      {BEGIN STR_STATE;if(error==1){error=0;}yymore(); column_error = column; line_error=l; is_str=1;}
+<STR_STATE>\"                              {BEGIN 0;if(error==0 && yyleng>0){if(tokens) printf("STRLIT(%s)\n",yytext); semicollon(1); if(!tokens) return STRLIT;} error=0; is_str=0; col();}
 <STR_STATE>\\                              {BEGIN SEQUENCE;yymore(); escape_line_error=l; escape_col_error=column+yyleng-1;}
-<STR_STATE>\n                              {BEGIN 0;printf("--> %s\n",yytext);printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line();}
+<STR_STATE>\n                              {BEGIN 0;printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line();}
 <STR_STATE><<EOF>>                         {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);return 1;}
 <STR_STATE>.                               {yymore();}
-<SEQUENCE>\n                            {BEGIN 0;printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line();}
-<SEQUENCE>[^fnrt\"\\]                   {BEGIN STR_STATE;printf("Line %d, column %d: invalid escape sequence (\\%c)\n",escape_line_error,escape_col_error,yytext[yyleng-1]);error = 1; col();}
+<SEQUENCE>\n                            {BEGIN 0; printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line(); is_str=0;}
+<SEQUENCE>[^fnrt\"\\]                   {BEGIN STR_STATE; printf("Line %d, column %d: invalid escape sequence (\\%c)\n",escape_line_error,escape_col_error,yytext[yyleng-1]); yymore(); error = 1;}
 <SEQUENCE><<EOF>>                       {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);return 1;}
 <SEQUENCE>.                             {BEGIN STR_STATE;yymore();}
 
@@ -145,7 +146,10 @@ int return_line(){
     return l;
 }
 int return_column(){
-    return column-yyleng;
+    if(!is_str){
+        return column-yyleng;
+    }
+    return column_error;
 }
 
 
