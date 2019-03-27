@@ -124,7 +124,7 @@ letter          [a-zA-Z_]+
 			        }
                 }
 
-<<EOF>>      { if(needs_semicolon == 1){
+<<EOF>>      {if(needs_semicolon == 1){
                 if(tokens) {
                     printf("SEMICOLON\n");
                 }
@@ -147,7 +147,7 @@ int return_line(){
 }
 int return_column(){
     if(!is_str){
-        return column-yyleng;
+        return column-yyleng > 1 ? column-yyleng : 1;
     }
     return column_error;
 }
