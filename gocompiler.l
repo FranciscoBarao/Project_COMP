@@ -4,6 +4,7 @@ hex_digit       ("0x"|"0X")[0-9a-fA-F]+
 exponent        ("e"|"E")("+"|"-")?{decimal_digit}
 letter          [a-zA-Z_]+
 %{
+    #include "functions.h"
     #include "y.tab.h"
     #define yygetc() getc(yyin)
    
@@ -72,8 +73,8 @@ letter          [a-zA-Z_]+
 ({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALLIT(%s)\n",yytext); col(); semicollon(1); if(!tokens) return REALLIT;}
 
 
-\"                                      {if(error==1){error=0;} column_error = column; line_error=l; col(); BEGIN STR_STATE;}
-<STR_STATE>\"                              {if(error==0 && yyleng>0){ yytext[yyleng-1]='\0'; printf("STRLIT(\"%s\")\n",yytext);  semicollon(1); if(!tokens) return STRLIT;}col();error=0;BEGIN 0;}
+\"                                      {if(error==1){error=0;} yymore(); column_error = column; line_error=l; col(); BEGIN STR_STATE;}
+<STR_STATE>\"                              {if(error==0 && yyleng>0){printf("STRLIT(%s)\n",yytext);  semicollon(1); if(!tokens) return STRLIT;}col();error=0;BEGIN 0;}
 <STR_STATE>\\                              {yymore(); escape_line_error=l; escape_col_error=column+yyleng-1; BEGIN SEQUENCE;}
 <STR_STATE>.                               {yymore();}
 <STR_STATE>\n                              {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line();BEGIN 0;}
