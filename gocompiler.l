@@ -16,6 +16,7 @@ letter          [a-zA-Z_]+
     int line_error = 0;     //Var to save line in error case
     int escape_col_error = 0;
     int escape_line_error = 0;
+    int end_of_file=0;
 
 
     void col(){
@@ -35,10 +36,11 @@ letter          [a-zA-Z_]+
 %%
 
  /*Comments*/
-"//"                    {col();BEGIN LINE_COMMENT;}
+"//"                    {BEGIN LINE_COMMENT;col();}
 <LINE_COMMENT>"\n"      {BEGIN 0; line(); if(needs_semicolon == 1){
 					if(tokens) printf("SEMICOLON\n");
 					needs_semicolon = 0;
+                    if(!tokens) return SEMICOLON;
 			        }
                 }
 <LINE_COMMENT>.         {col();}
@@ -72,16 +74,16 @@ letter          [a-zA-Z_]+
 ({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALLIT(%s)\n",yytext); col(); semicollon(1); if(!tokens) return REALLIT;}
 
 
-\"                                      {if(error==1){error=0;} column_error = column; line_error=l; col(); BEGIN STR_STATE;}
-<STR_STATE>\"                              {if(error==0 && yyleng>0){ yytext[yyleng-1]='\0'; printf("STRLIT(\"%s\")\n",yytext);  semicollon(1); if(!tokens) return STRLIT;}col();error=0;BEGIN 0;}
-<STR_STATE>\\                              {yymore(); escape_line_error=l; escape_col_error=column+yyleng-1; BEGIN SEQUENCE;}
-<STR_STATE>.                               {yymore();}
-<STR_STATE>\n                              {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line();BEGIN 0;}
+\"                                      {BEGIN STR_STATE;if(error==1){error=0;} column_error = column; line_error=l; col();}
+<STR_STATE>\"                              {BEGIN 0;if(error==0 && yyleng>0){ yytext[yyleng-1]='\0';if(tokens) printf("STRLIT(\"%s\")\n",yytext);  semicollon(1); if(!tokens) return STRLIT;}col();error=0;}
+<STR_STATE>\\                              {BEGIN SEQUENCE;yymore(); escape_line_error=l; escape_col_error=column+yyleng-1;}
+<STR_STATE>\n                              {BEGIN 0;printf("--> %s\n",yytext);printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line();}
 <STR_STATE><<EOF>>                         {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);return 1;}
-<SEQUENCE>\n                            {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line();BEGIN 0;}
-<SEQUENCE>[^fnrt\"\\]                   {printf("Line %d, column %d: invalid escape sequence (\\%c)\n",escape_line_error,escape_col_error,yytext[yyleng-1]);error = 1; col();BEGIN STR_STATE;}
-<SEQUENCE>.                             {yymore();BEGIN STR_STATE;}
+<STR_STATE>.                               {yymore();}
+<SEQUENCE>\n                            {BEGIN 0;printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line();}
+<SEQUENCE>[^fnrt\"\\]                   {BEGIN STR_STATE;printf("Line %d, column %d: invalid escape sequence (\\%c)\n",escape_line_error,escape_col_error,yytext[yyleng-1]);error = 1; col();}
 <SEQUENCE><<EOF>>                       {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);return 1;}
+<SEQUENCE>.                             {BEGIN STR_STATE;yymore();}
 
  /*Operators* & punctuation*/
 ";"             {if(tokens) printf("SEMICOLON\n"); col();semicollon(0); if(!tokens) return SEMICOLON;}
@@ -122,16 +124,20 @@ letter          [a-zA-Z_]+
                 }
 
 <<EOF>>      { if(needs_semicolon == 1){
-                if(tokens){ 
-                    printf("SEMICOLON\n"); 
+                if(tokens) {
+                    printf("SEMICOLON\n");
+                }
+                else{
+                    if(!end_of_file){
+                        end_of_file=1;
+                        return SEMICOLON;
+                        }
                     }
-
-                if(!tokens) return SEMICOLON;
                 }
                 return 0;
-                }
+            }
 
-.            {printf("Line %d, column %d: illegal character (%s)\n",l,column,yytext); col(); BEGIN 0;}
+.            {BEGIN 0; printf("Line %d, column %d: illegal character (%s)\n",l,column,yytext); col(); }
 %%
 
 
