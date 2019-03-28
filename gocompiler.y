@@ -4,6 +4,7 @@
     #include <string.h>
     #include "functions.h"
     #include "y.tab.h"
+
     int yylex(void);
     extern char *yytext;
     void yyerror (const char *s);
@@ -11,7 +12,6 @@
 
     int is_error = 0;
     Structure* myprogram;
-
 %}
 %define parse.error verbose
 //Values

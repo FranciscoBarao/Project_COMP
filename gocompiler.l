@@ -75,7 +75,7 @@ letter          [a-zA-Z_]+
 
 
 \"                                      {BEGIN STR_STATE;if(error==1){error=0;}yymore(); column_error = column; line_error=l; is_str=1;}
-<STR_STATE>\"                           {BEGIN 0; col(); if(error==0 && yyleng>0){if(tokens) printf("STRLIT(%s)\n",yytext); semicollon(1); if(!tokens){ yylval.value = (char*)strdup(yytext); return STRLIT;}} error=0; is_str=0;}
+<STR_STATE>\"                           {BEGIN 0; col(); if(error==0 && yyleng>0){if(tokens) printf("STRLIT(%s)\n",yytext); semicollon(1);} if(!tokens){ yylval.value = (char*)strdup(yytext); return STRLIT;} error=0; is_str=0;}
 <STR_STATE>\\                           {BEGIN SEQUENCE;yymore(); escape_line_error=l; escape_col_error=column+yyleng-1;}
 <STR_STATE>\n                           {BEGIN 0;printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line(); is_str=0;}
 <STR_STATE><<EOF>>                      {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);return 1;}
