@@ -4,6 +4,7 @@ hex_digit       ("0x"|"0X")[0-9a-fA-F]+
 exponent        ("e"|"E")("+"|"-")?{decimal_digit}
 letter          [a-zA-Z_]+
 %{
+    #include "functions.h"
     #include "y.tab.h"
     #define yygetc() getc(yyin)
    
@@ -18,7 +19,6 @@ letter          [a-zA-Z_]+
     int escape_line_error = 0;
     int end_of_file=0;
     int is_str = 0;
-
 
     void col(){
         column += yyleng;
@@ -71,16 +71,16 @@ letter          [a-zA-Z_]+
 
 "++"|"--"|"break"|"case"|"chan"|"const"|"continue"|"default"|"defer"|"fallthrough"|"go"|"goto"|"import"|"interface"|"map"|"range"|"select"|"struct"|"switch"|"type" {if(tokens) printf("RESERVED(%s)\n",yytext); col(); semicollon(0); if(!tokens) return RESERVED;}
 
-{decimal_digit}|{octal_digit}|{hex_digit}                                         {if(tokens) printf("INTLIT(%s)\n",yytext); col(); semicollon(1); if(!tokens) return INTLIT;}
-({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALLIT(%s)\n",yytext); col(); semicollon(1); if(!tokens) return REALLIT;}
+{decimal_digit}|{octal_digit}|{hex_digit}                                         {if(tokens) printf("INTLIT(%s)\n",yytext); col(); semicollon(1); if(!tokens){ yylval.value = (char*)strdup(yytext); return INTLIT;}}
+({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALLIT(%s)\n",yytext); col(); semicollon(1); if(!tokens){ yylval.value = (char*)strdup(yytext); return REALLIT;}}
 
 
 \"                                      {BEGIN STR_STATE;if(error==1){error=0;}yymore(); column_error = column; line_error=l; is_str=1;}
-<STR_STATE>\"                              {BEGIN 0;if(error==0 && yyleng>0){if(tokens) printf("STRLIT(%s)\n",yytext); semicollon(1); if(!tokens) return STRLIT;} error=0; is_str=0; col();}
-<STR_STATE>\\                              {BEGIN SEQUENCE;yymore(); escape_line_error=l; escape_col_error=column+yyleng-1;}
-<STR_STATE>\n                              {BEGIN 0;printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line();}
-<STR_STATE><<EOF>>                         {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);return 1;}
-<STR_STATE>.                               {yymore();}
+<STR_STATE>\"                           {BEGIN 0; col(); if(error==0 && yyleng>0){if(tokens) printf("STRLIT(%s)\n",yytext); semicollon(1); if(!tokens){ yylval.value = (char*)strdup(yytext); return STRLIT;}} error=0; is_str=0;}
+<STR_STATE>\\                           {BEGIN SEQUENCE;yymore(); escape_line_error=l; escape_col_error=column+yyleng-1;}
+<STR_STATE>\n                           {BEGIN 0;printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line(); is_str=0;}
+<STR_STATE><<EOF>>                      {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);return 1;}
+<STR_STATE>.                            {yymore();}
 <SEQUENCE>\n                            {BEGIN 0; printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line(); is_str=0;}
 <SEQUENCE>[^fnrt\"\\]                   {BEGIN STR_STATE; printf("Line %d, column %d: invalid escape sequence (\\%c)\n",escape_line_error,escape_col_error,yytext[yyleng-1]); yymore(); error = 1;}
 <SEQUENCE><<EOF>>                       {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);return 1;}
@@ -113,7 +113,7 @@ letter          [a-zA-Z_]+
 "]"             {if(tokens) printf("RSQ\n"); col(); semicollon(1); if(!tokens) return RSQ;}
 
  /*Identifier*/
-{letter}({letter}|{decimal_digit})* {if(tokens) printf("ID(%s)\n",yytext); col(); semicollon(1); if(!tokens) return ID;}
+{letter}({letter}|{decimal_digit})* {if(tokens) printf("ID(%s)\n",yytext); col(); semicollon(1); if(!tokens){ yylval.value = (char*)strdup(yytext); return ID;}}
 
  /*Special Cases*/
 " "|"\t"          {col();}
@@ -135,6 +135,7 @@ letter          [a-zA-Z_]+
                         }
                     }
                 }
+                col();
                 return 0;
             }
 
@@ -146,10 +147,7 @@ int return_line(){
     return l;
 }
 int return_column(){
-    if(!is_str){
-        return column-yyleng > 1 ? column-yyleng : 1;
-    }
-    return column_error;
+    return column-yyleng;
 }
 
 
