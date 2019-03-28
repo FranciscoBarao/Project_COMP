@@ -65,9 +65,9 @@
     Structure *node;
 }
 
-%left OR AND
-%left EQ NE
-%left LT GT LE GE
+%left OR 
+%left AND
+%left EQ NE LT GT LE GE
 %left PLUS MINUS
 %left DIV MOD STAR
 %left LPAR

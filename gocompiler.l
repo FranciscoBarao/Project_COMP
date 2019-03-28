@@ -17,7 +17,6 @@ letter          [a-zA-Z_]+
     int line_error = 0;     //Var to save line in error case
     int escape_col_error = 0;
     int escape_line_error = 0;
-    int end_of_file=0;
     int is_str = 0;
 
     void col(){
@@ -129,10 +128,8 @@ letter          [a-zA-Z_]+
                     printf("SEMICOLON\n");
                 }
                 else{
-                    if(!end_of_file){
-                        end_of_file=1;
-                        return SEMICOLON;
-                        }
+                    needs_semicolon=0;
+                    return SEMICOLON;
                     }
                 }
                 col();

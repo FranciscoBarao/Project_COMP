@@ -18,12 +18,12 @@ compile_yacc_flags: gocompiler.l gocompiler.y
 		yacc -d ${YACCFLAGS} gocompiler.y
 
 
-compile_main: y.tab.c lex.yy.c
-	gcc -o  main y.tab.c lex.yy.c
+compile_main: y.tab.c lex.yy.c functions.c
+	gcc -o  main y.tab.c lex.yy.c functions.c
 
 run: 
 		./main -l
 run_test:
-		./main < Test
+		./main -t < Test
 clean: 
 		rm -rf *o main
