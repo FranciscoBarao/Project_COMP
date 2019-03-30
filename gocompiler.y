@@ -75,7 +75,7 @@
 
 %%
 program: 
-        PACKAGE ID SEMICOLON declarations                      {$$=myprogram=create_node("Program", 0, 0, program, $4);}
+        PACKAGE ID SEMICOLON declarations                      {$$=myprogram=create_node("Program", 0, 0, Program, $4);}
     ;
 
 declarations:
@@ -86,12 +86,12 @@ declarations:
 
 
 function_declaration:
-        function_header function_body                          {$$=create_node("FuncDecl", 0, 0, declarations, $1); add_brother($1, $2);}
+        function_header function_body                          {$$=create_node("FuncDecl", 0, 0, FuncDecl, $1); add_brother($1, $2);}
     ;
 
 function_header:
-        FUNC id_state LPAR parameters RPAR                     {$$=create_node("FuncHeader", 0, 0, function_declaration, $2); add_brother($2, $4);}
-    |   FUNC id_state LPAR parameters RPAR type                {$$=create_node("FuncHeader", 0, 0, function_declaration, $2); add_brother($2, $6); add_brother($6, $4);}
+        FUNC id_state LPAR parameters RPAR                     {$$=create_node("FuncHeader", 0, 0, FuncHeader, $2); add_brother($2, $4);}
+    |   FUNC id_state LPAR parameters RPAR type                {$$=create_node("FuncHeader", 0, 0, FuncHeader, $2); add_brother($2, $6); add_brother($6, $4);}
     ;
 
 variable_declaration:
@@ -100,11 +100,11 @@ variable_declaration:
     ;
 
 variable_specification:
-        id_state id_list                                       {Structure* vardecl = create_node("VarDecl", 0, 0, declarations, $1); add_brother(vardecl, $2); $$=vardecl;}
+        id_state id_list                                       {Structure* vardecl = create_node("VarDecl", 0, 0, VarDecl, $1); add_brother(vardecl, $2); $$=vardecl;}
     ;
 
 id_list:  
-        COMMA id_state id_list                                 {Structure* vardecl = create_node("VarDecl", 0, 0, declarations, $2); add_brother(vardecl, $3); $$=vardecl;}
+        COMMA id_state id_list                                 {Structure* vardecl = create_node("VarDecl", 0, 0, VarDecl, $2); add_brother(vardecl, $3); $$=vardecl;}
     |                                                          {$$=(Structure*)NULL;}
     ;
 
@@ -113,17 +113,17 @@ id_state:
     ;
 
 parameters:  
-        parameters_decl                                        {$$=create_node("FuncParams",0,0,parameters, $1);}
+        parameters_decl                                        {$$=create_node("FuncParams",0,0,FuncParams, $1);}
     ;
 
 parameters_decl:
-        id_state type parameters_list                          {Structure* paramsdecl = create_node("ParamDecl",0,0,parameters, $2); add_brother($2, $1); add_brother(paramsdecl, $3); $$=paramsdecl;}
+        id_state type parameters_list                          {Structure* paramsdecl = create_node("ParamDecl",0,0,ParamDecl, $2); add_brother($2, $1); add_brother(paramsdecl, $3); $$=paramsdecl;}
     |                                                          {$$=(Structure*)NULL;}
     ;
 
 
 parameters_list:
-        COMMA id_state type parameters_list                    {Structure* paramsdecl = create_node("ParamDecl",0,0,parameters, $3); add_brother($3, $2); add_brother(paramsdecl, $4); $$=paramsdecl;}
+        COMMA id_state type parameters_list                    {Structure* paramsdecl = create_node("ParamDecl",0,0,ParamDecl, $3); add_brother($3, $2); add_brother(paramsdecl, $4); $$=paramsdecl;}
     |                                                          {$$=(Structure*)NULL;}
     ;
 
@@ -135,7 +135,7 @@ type:
     ;       
 
 function_body:                                                 {$$=(Structure*)NULL;}
-    |   LBRACE variables_statements RBRACE                     {$$=create_node("FuncBody",0,0,function_body, $2);}
+    |   LBRACE variables_statements RBRACE                     {$$=create_node("FuncBody",0,0,FuncBody, $2);}
     ;
 
 variables_statements:
@@ -157,7 +157,7 @@ statement:
     ;
 
 assign_statement:
-        id_state ASSIGN expression                             {$$=create_node("Assign",0,0,assign_statement, $1); add_brother($1, $3);}
+        id_state ASSIGN expression                             {$$=create_node("Assign",0,0,Statement, $1); add_brother($1, $3);}
     ;
 
 braces_statement:
@@ -165,11 +165,11 @@ braces_statement:
     ;    
 
 block_if_childs:
-        statement_list                                         {if($1 != NULL && $1->brother != NULL){ $$ = create_node("Block",0,0,statement_list, $1); }else{$$=$1;}}
+        statement_list                                         {if($1 != NULL && $1->brother != NULL){ $$ = create_node("Block",0,0,Block, $1); }else{$$=$1;}}
     ;
 
 block_statement:
-        statement_list                                         {$$ = create_node("Block",0,0,statement_list, $1);}
+        statement_list                                         {$$ = create_node("Block",0,0,Block, $1);}
     ;
 
 statement_list: 
@@ -178,18 +178,18 @@ statement_list:
     ;
 
 if_statement:
-        IF expression LBRACE block_statement RBRACE block_statement                       {$$=create_node("If",0,0,if_statement, $2); add_brother($2, $4); add_brother($4, $6);}
-    |   IF expression LBRACE block_statement RBRACE ELSE LBRACE block_statement RBRACE    {$$=create_node("If",0,0,if_statement, $2); add_brother($2, $4); add_brother($4, $8);}
+        IF expression LBRACE block_statement RBRACE block_statement                       {$$=create_node("If",0,0,Statement, $2); add_brother($2, $4); add_brother($4, $6);}
+    |   IF expression LBRACE block_statement RBRACE ELSE LBRACE block_statement RBRACE    {$$=create_node("If",0,0,Statement, $2); add_brother($2, $4); add_brother($4, $8);}
     ;
 
 for_statement:  
-        FOR LBRACE block_statement RBRACE                        {$$=create_node("For",0,0,for_statement, $3);}
-    |   FOR expression LBRACE block_statement RBRACE             {$$=create_node("For",0,0,for_statement, $2); add_brother($2, $4);}
+        FOR LBRACE block_statement RBRACE                        {$$=create_node("For",0,0,Statement, $3);}
+    |   FOR expression LBRACE block_statement RBRACE             {$$=create_node("For",0,0,Statement, $2); add_brother($2, $4);}
     ;
 
 return_statement:
-        RETURN                                                  {$$=create_node("Return",0,0,return_statement, NULL);}
-    |   RETURN expression                                       {$$=create_node("Return",0,0,return_statement, $2);}
+        RETURN                                                  {$$=create_node("Return",0,0,Statement, NULL);}
+    |   RETURN expression                                       {$$=create_node("Return",0,0,Statement, $2);}
     ;
 
 union_statement: 
@@ -198,8 +198,8 @@ union_statement:
     ;
 
 str_statement:
-        PRINT LPAR expression RPAR                              {$$=create_node("Print",0,0,str_statement, $3);}
-    |   PRINT LPAR strlit_state RPAR                            {$$=create_node("Print",0,0,str_statement, $3);}
+        PRINT LPAR expression RPAR                              {$$=create_node("Print",0,0,Statement, $3);}
+    |   PRINT LPAR strlit_state RPAR                            {$$=create_node("Print",0,0,Statement, $3);}
     ;
 
 strlit_state:
@@ -207,12 +207,12 @@ strlit_state:
     ;
 
 parse_arguments:
-        id_state COMMA BLANKID ASSIGN PARSEINT LPAR CMDARGS LSQ expression RSQ RPAR     {$$=create_node("ParseArgs",0,0,parse_arguments, $1); add_brother($1, $9);}
+        id_state COMMA BLANKID ASSIGN PARSEINT LPAR CMDARGS LSQ expression RSQ RPAR     {$$=create_node("ParseArgs",0,0,ParseArgs, $1); add_brother($1, $9);}
     |   id_state COMMA BLANKID ASSIGN PARSEINT LPAR error RPAR                          {$$=(Structure*)NULL; is_error=1;}
     ;
 function_invocation:
-        id_state LPAR RPAR                                      {$$=create_node("Call",0,0,function_invocation, $1);}
-    |   id_state LPAR expression expression_list RPAR           {$$=create_node("Call",0,0,function_invocation, $1); add_brother($1, $3); add_brother($3, $4);}
+        id_state LPAR RPAR                                      {$$=create_node("Call",0,0,Call, $1);}
+    |   id_state LPAR expression expression_list RPAR           {$$=create_node("Call",0,0,Call, $1); add_brother($1, $3); add_brother($3, $4);}
     |   id_state LPAR error RPAR                                {$$=(Structure*)NULL; is_error=1;}
     ;
 
@@ -222,22 +222,22 @@ expression_list:
     ;
 
 expression:
-        expression OR  expression                               {$$=create_node("Or",0,0,expression, $1); add_brother($1, $3);}
-    |   expression AND expression                               {$$=create_node("And",0,0,expression, $1); add_brother($1, $3);}
-    |   expression LT expression                                {$$=create_node("Lt",0,0,expression, $1); add_brother($1, $3);}
-    |   expression GT expression                                {$$=create_node("Gt",0,0,expression, $1); add_brother($1, $3);}
-    |   expression LE expression                                {$$=create_node("Le",0,0,expression, $1); add_brother($1, $3);}
-    |   expression GE expression                                {$$=create_node("Ge",0,0,expression, $1); add_brother($1, $3);}
-    |   expression EQ expression                                {$$=create_node("Eq",0,0,expression, $1); add_brother($1, $3);}
-    |   expression NE expression                                {$$=create_node("Ne",0,0,expression, $1); add_brother($1, $3);}
-    |   expression PLUS expression                              {$$=create_node("Add",0,0,expression, $1); add_brother($1, $3);}
-    |   expression MINUS expression                             {$$=create_node("Sub",0,0,expression, $1); add_brother($1, $3);}
-    |   expression STAR expression                              {$$=create_node("Mul",0,0,expression, $1); add_brother($1, $3);}
-    |   expression DIV expression                               {$$=create_node("Div",0,0,expression, $1); add_brother($1, $3);}
-    |   expression MOD expression                               {$$=create_node("Mod",0,0,expression, $1); add_brother($1, $3);}
-    |   NOT expression  %prec  flag                             {$$=create_node("Not",0,0,expression, $2);}
-    |   MINUS expression %prec flag                             {$$=create_node("Minus",0,0,expression, $2);}
-    |   PLUS expression  %prec flag                             {$$=create_node("Plus",0,0,expression, $2);}
+        expression OR  expression                               {$$=create_node("Or",0,0,Expression, $1); add_brother($1, $3);}
+    |   expression AND expression                               {$$=create_node("And",0,0,Expression, $1); add_brother($1, $3);}
+    |   expression LT expression                                {$$=create_node("Lt",0,0,Expression, $1); add_brother($1, $3);}
+    |   expression GT expression                                {$$=create_node("Gt",0,0,Expression, $1); add_brother($1, $3);}
+    |   expression LE expression                                {$$=create_node("Le",0,0,Expression, $1); add_brother($1, $3);}
+    |   expression GE expression                                {$$=create_node("Ge",0,0,Expression, $1); add_brother($1, $3);}
+    |   expression EQ expression                                {$$=create_node("Eq",0,0,Expression, $1); add_brother($1, $3);}
+    |   expression NE expression                                {$$=create_node("Ne",0,0,Expression, $1); add_brother($1, $3);}
+    |   expression PLUS expression                              {$$=create_node("Add",0,0,Expression, $1); add_brother($1, $3);}
+    |   expression MINUS expression                             {$$=create_node("Sub",0,0,Expression, $1); add_brother($1, $3);}
+    |   expression STAR expression                              {$$=create_node("Mul",0,0,Expression, $1); add_brother($1, $3);}
+    |   expression DIV expression                               {$$=create_node("Div",0,0,Expression, $1); add_brother($1, $3);}
+    |   expression MOD expression                               {$$=create_node("Mod",0,0,Expression, $1); add_brother($1, $3);}
+    |   NOT expression  %prec  flag                             {$$=create_node("Not",0,0,Expression, $2);}
+    |   MINUS expression %prec flag                             {$$=create_node("Minus",0,0,Expression, $2);}
+    |   PLUS expression  %prec flag                             {$$=create_node("Plus",0,0,Expression, $2);}
     |   INTLIT                                                  {$$=create_node($1,0,0,intlit, NULL);}
     |   REALLIT                                                 {$$=create_node($1,0,0,reallit, NULL);}
     |   id_state                                                {$$=$1;}
@@ -278,7 +278,19 @@ void print_tree(Structure *node, int number_of_points){
         number_of_points += 1;
         print_tree(node->child, number_of_points);
         print_tree(node->brother, original_value);
+        free(node->token);
+        free(node);
     }
+}
+
+void free_tree(Structure *node){
+    if(node == NULL){
+        return;
+    }
+    free_tree(node->child);
+    free_tree(node->brother);
+    free(node->token);
+    free(node);
 }
 
 Structure* copy_type(Structure* type, Structure* brother){
@@ -300,6 +312,8 @@ int main(int argc, char* argv[]){
     yyparse();
     if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-t")==0){
         print_tree(myprogram, 0);
+    }else{
+        free_tree(myprogram);
     }
     return 0;
 }
