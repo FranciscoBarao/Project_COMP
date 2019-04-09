@@ -8,6 +8,8 @@ letter          [a-zA-Z_]+
     #include "y.tab.h"
     #define yygetc() getc(yyin)
    
+    Scope_element *scope_table=NULL;
+
     int l = 1;               //Var for Line
     int column = 1;          //Var for Column
     int needs_semicolon = 0; //Var for Semicolon need
@@ -37,6 +39,12 @@ letter          [a-zA-Z_]+
     }
     void semicollon(int x){
         needs_semicolon = (x==1 ? 1 : 0); 
+    }
+
+    void identifier_to_token(){
+        yylval.value.val = (char*)strdup(yytext); 
+        yylval.value.l = l; 
+        yylval.value.col = column;
     }
 %}
 
@@ -79,12 +87,12 @@ letter          [a-zA-Z_]+
 
 "++"|"--"|"break"|"case"|"chan"|"const"|"continue"|"default"|"defer"|"fallthrough"|"go"|"goto"|"import"|"interface"|"map"|"range"|"select"|"struct"|"switch"|"type" {if(tokens) printf("RESERVED(%s)\n",yytext); col(); semicollon(0); if(!tokens) return RESERVED;}
 
-{decimal_digit}|{octal_digit}|{hex_digit}                                         {if(tokens) printf("INTLIT(%s)\n",yytext); col(); semicollon(1); if(!tokens){ yylval.value = (char*)strdup(yytext); return INTLIT;}}
-({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALLIT(%s)\n",yytext); col(); semicollon(1); if(!tokens){ yylval.value = (char*)strdup(yytext); return REALLIT;}}
+{decimal_digit}|{octal_digit}|{hex_digit}                                         {if(tokens) printf("INTLIT(%s)\n",yytext); col(); semicollon(1); if(!tokens){identifier_to_token(); return INTLIT;}}
+({decimal_digit}"."?{decimal_digit}?{exponent}?)|("."{decimal_digit}{exponent}?)  {if(tokens) printf("REALLIT(%s)\n",yytext); col(); semicollon(1); if(!tokens){identifier_to_token(); return REALLIT;}}
 
 
 \"                                      {BEGIN STR_STATE;if(error==1){error=0;}yymore(); column_error = column; line_error=l;}
-<STR_STATE>\"                           {BEGIN 0; col(); if(error==0 && yyleng>0){if(tokens) printf("STRLIT(%s)\n",yytext); semicollon(1);} if(!tokens){ yylval.value = (char*)strdup(yytext); return STRLIT;} error=0;}
+<STR_STATE>\"                           {BEGIN 0; col(); if(error==0 && yyleng>0){if(tokens) printf("STRLIT(%s)\n",yytext); semicollon(1);} if(!tokens){identifier_to_token(); return STRLIT;} error=0;}
 <STR_STATE>\\                           {BEGIN SEQUENCE;yymore(); escape_line_error=l; escape_col_error=column+yyleng-1;}
 <STR_STATE>\n                           {BEGIN 0;printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);semicollon(0);line();}
 <STR_STATE><<EOF>>                      {printf("Line %d, column %d: unterminated string literal\n",line_error,column_error);return 1;}
@@ -121,7 +129,7 @@ letter          [a-zA-Z_]+
 "]"             {if(tokens) printf("RSQ\n"); col(); semicollon(1); if(!tokens) return RSQ;}
 
  /*Identifier*/
-{letter}({letter}|{decimal_digit})* {if(tokens) printf("ID(%s)\n",yytext); col(); semicollon(1); if(!tokens){ yylval.value = (char*)strdup(yytext); return ID;}}
+{letter}({letter}|{decimal_digit})* {if(tokens) printf("ID(%s)\n",yytext); col(); semicollon(1); if(!tokens){identifier_to_token(); return ID;}}
 
  /*Special Cases*/
 " "|"\t"          {col();}

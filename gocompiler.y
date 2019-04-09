@@ -61,7 +61,7 @@
 %type<node>block_if_childs
 
 %union{
-    char* value;
+    Token value;
     Structure *node;
 }
 
@@ -71,7 +71,7 @@
 %left PLUS MINUS
 %left DIV MOD STAR
 %left LPAR
-%right flag
+%right flag /* left flag \n left LPAR LBRACE LSQ \n rigth RPAR RBRACE RSQ */
 
 %%
 program: 
@@ -109,7 +109,7 @@ id_list:
     ;
 
 id_state:
-        ID                                                     {$$=create_node($1,0,0,id, NULL);}
+        ID                                                     {$$=create_node($1.val,$1.col,$1.l,id, NULL);}
     ;
 
 parameters:  
@@ -203,7 +203,7 @@ str_statement:
     ;
 
 strlit_state:
-        STRLIT                                                  {$$=create_node($1,0,0,strlit, NULL);}
+        STRLIT                                                  {$$=create_node($1.val,$1.col,$1.l,strlit, NULL);}
     ;
 
 parse_arguments:
@@ -238,8 +238,8 @@ expression:
     |   NOT expression  %prec  flag                             {$$=create_node("Not",0,0,Expression, $2);}
     |   MINUS expression %prec flag                             {$$=create_node("Minus",0,0,Expression, $2);}
     |   PLUS expression  %prec flag                             {$$=create_node("Plus",0,0,Expression, $2);}
-    |   INTLIT                                                  {$$=create_node($1,0,0,intlit, NULL);}
-    |   REALLIT                                                 {$$=create_node($1,0,0,reallit, NULL);}
+    |   INTLIT                                                  {$$=create_node($1.val,$1.col,$1.l,intlit, NULL);}
+    |   REALLIT                                                 {$$=create_node($1.val,$1.col,$1.l,reallit, NULL);}
     |   id_state                                                {$$=$1;}
     |   LPAR expression RPAR                                    {$$=$2;}
     |   function_invocation                                     {$$=$1;}
