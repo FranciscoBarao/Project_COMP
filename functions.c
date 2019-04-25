@@ -74,7 +74,7 @@ Table_element *insert_variable(char* scope_name, char *str, basic_type t){
         new_symbol->next=NULL;	
 
         if(symbol_table){	
-            //Procura cauda da lista e verifica se simbolo ja existe (NOTA: assume-se uma tabela de simbolos globais!)
+            //Procura cauda da lista e verifica se simbolo ja existe
             for(aux=symbol_table; aux; previous=aux, aux=aux->next)
                 if(strcmp(aux->name, str)==0)
                     return NULL;
@@ -88,17 +88,78 @@ Table_element *insert_variable(char* scope_name, char *str, basic_type t){
     }
 }
 
+const char* type_to_string(basic_type t){
+    switch(t) {
+        case integer:
+            return "int";
+            break;
+        case string:
+            return "string";
+            break;
+        case boolean:
+            return "bool";
+            break;
+        case float32:
+            return "float32";
+            break;
+        case none:
+            return "none";
+            break;
+        case undef:
+            return "undef";
+            break;
+        default:
+            return "error";
+            break;
+    }
+}
+
 void show_table(){
     printf("\n");
     Scope_element *aux_scope;
+    Scope_element *scope;
     Table_element *aux;
+    Table_element *param;
+    int inside_params;
     for(aux_scope = scope_table; aux_scope; aux_scope=aux_scope->next){
-        printf("Scope %s:\n", aux_scope->name);
-        for(aux=aux_scope->variables; aux; aux=aux->next){
-            printf("    symbol %s, type %d\n", aux->name, aux->type);
+        inside_params = 0; // Variable used to check if variable is still a param of the function
+        if(strcmp(aux_scope->name, "global")){
+            printf("==== Global Symbol Table ====\n");
+        }else{
+            printf("==== Function %s() Symbol Table ====\n", aux_scope->name);
+            printf("return\t\t%s\n", type_to_string(aux_scope->type));
         }
+        for(aux=aux_scope->variables; aux; aux=aux->next){
+            printf("%s\t", aux->name); //%s)\t%s\t%s\n", aux->name, aux->name, aux->name, aux->name);
+            if(aux->type == function){
+                printf("(");
+                // percorre as variaveis e imprime os tipos delas
+                scope = get_scope(aux->name);
+                if(scope != NULL){
+                    param = scope->variables;
+                    if(param != NULL){
+                        for(int i=0; i<scope->number_of_params; i++){
+                            printf("%s", type_to_string(param->type));
+                            if(i < scope->number_of_params-1){
+                                printf(",");
+                            }
+                            param = param->next;
+                        }
+                    }
+                }
+                printf(")\t%s", type_to_string(scope->type));
+            }else{
+                if(inside_params < aux_scope->number_of_params){
+                    printf("\t%s\tparam", type_to_string(aux->type));
+                    inside_params += 1;
+                }else{
+                    printf("\t%s", type_to_string(aux->type));
+                }
+            }
+            printf("\n");
+        }
+        printf("\n");
     }
-    
 }
 
 //Procura um identificador, devolve 0 caso nao exista

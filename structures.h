@@ -23,7 +23,7 @@ typedef enum {
 } Type_node;
 
 
-typedef enum {integer, string, boolean, float32} basic_type;
+typedef enum {integer, string, boolean, float32, function, undef, none} basic_type;
 
 typedef struct _s2{
   char* val;
@@ -32,6 +32,7 @@ typedef struct _s2{
 
 typedef struct _s1{
   Type_node type;
+  basic_type value_type;
   Token *token;
   struct _s1 *brother;
   struct _s1 *child;
@@ -46,6 +47,7 @@ typedef struct _t2{
 typedef struct _t1{
 	char name[32];
   int number_of_params;
+  basic_type type;
   struct _t2 *variables;
 	struct _t1 *next;
 } Scope_element;

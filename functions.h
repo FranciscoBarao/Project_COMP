@@ -6,4 +6,5 @@ Scope_element* add_scope(char* scope_name, int number_of_params);
 Scope_element *get_scope(char* scope_name);
 Table_element *insert_variable(char* scope_name, char *str, basic_type t);
 Table_element *search_variable(char* scope_name, char *str);
+const char* type_to_string(basic_type t);
 void show_table();

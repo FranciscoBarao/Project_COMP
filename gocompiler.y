@@ -161,7 +161,7 @@ assign_statement:
     ;
 
 braces_statement:
-        LBRACE block_if_childs RBRACE                           {$$=$2;}
+        LBRACE block_if_childs RBRACE                          {$$=$2;}
     ;    
 
 block_if_childs:
@@ -251,6 +251,52 @@ int lex_initiate(int argc, char* argv[]);
 int return_line();
 int return_column();
 
+void print_annotated_tree(Structure *node, int number_of_points, char* scope, int inside_expression){
+    Structure* tmp = node;
+    char* another_scope = scope;
+    int expression = inside_expression;
+    int original_value = number_of_points;
+    if(tmp != NULL){
+        // Stuff for prints
+        for(int i=0; i<number_of_points*2; i++){
+            printf(".");
+        }
+        switch(tmp->type) {
+            case id :
+                if(inside_expression){
+                    printf("Id(%s) - %s\n", tmp->token->val, type_to_string(search_variable(scope, tmp->token->val)->type));
+                }else{
+                    printf("Id(%s)\n", tmp->token->val);
+                }
+                break;
+            case intlit :
+                printf("IntLit(%s) - int\n", tmp->token->val);
+                break;
+            case reallit :
+                printf("RealLit(%s) - float32\n", tmp->token->val);
+                break;
+            case strlit:
+                printf("StrLit(%s) - string\n", tmp->token->val);
+                break;
+            case Expression:
+                printf("%s\n - %s", tmp->token->val, type_to_string(tmp->value_type));
+                expression = 1;
+                break;
+            case FuncDecl:
+                printf("%s\n", tmp->token->val);
+                another_scope = tmp->child->child->token->val;
+                break;
+            default :
+                printf("%s\n", tmp->token->val);
+        }
+        number_of_points += 1;
+        print_annotated_tree(node->child, number_of_points, another_scope, expression);
+        print_annotated_tree(node->brother, original_value, scope, inside_expression);
+        free(node->token);
+        free(node);
+    }
+}
+
 void print_tree(Structure *node, int number_of_points){
     Structure* tmp = node;
     int original_value = number_of_points;
@@ -304,6 +350,7 @@ void yyerror (const char *s) {
 }
 
 int main(int argc, char* argv[]){
+    int is_semantic = 0;
     lex_initiate(argc,argv);
     if(argv[1] != NULL && strcmp(argv[1] , "-l")==0) {
         yylex();
@@ -312,6 +359,13 @@ int main(int argc, char* argv[]){
     yyparse();
     if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-t")==0){
         print_tree(myprogram, 0);
+    }else{
+        free_tree(myprogram);
+    }
+    if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-s")==0) {
+        show_table();
+        print_annotated_tree(myprogram, 0, "global", 0);
+        return 0;
     }else{
         free_tree(myprogram);
     }
