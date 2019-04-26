@@ -11,72 +11,230 @@ void check_program(Structure *node, char* scope_name ){
     if(tmp != NULL){
         switch(tmp->type) {
             case VarDecl:
-                check_variable(tmp->child, scope_name); // If not  found -> create
+                check_variable(tmp->child, scope_name);
                 break;
             case Assign:
-                check_assign(node, tmp->child, scope_name); 
+                check_assign(tmp->child, scope_name); 
                 break;
-            case FunctionInvoc:
-                check_parameters(node, tmp->token->val, scope_name);
+            case Call: //Function Invocation --> So na segunda vez que se percorre a arvore?
+                check_function_invocation(node->child, scope_name);
                 break;
             case FuncHeader:
-                check_program(node->child, tmp->token->val);
-                check_program(node->brother, tmp->token->val);
+                check_program(tmp->child, tmp->token->val);
+                check_program(tmp->brother, tmp->token->val);
                 break;
+            case Statement:
+                check_statement(tmp->child, scope_name);
+                break;
+            case ParseArgs:
+                check_parseArgs(tmp->child, scope_name);
+                break;
+            
             default :
-                check_program(node->child, scope_name);
-                check_program(node->brother, scope_name);  
+                check_program(tmp->child, scope_name);
+                check_program(tmp->brother, scope_name);  
                 break;      
         }
     }
 }
 
+void check_function_invocation(Structure* node ,char* scope_name){
+    Scope_element* scope = get_scope(node->token->val); // Bem?
+    if(scope != NULL){
+        for(i=0;i<scope.number_of_params){
+            basic_type tmp = check_expression(node->child,scope_name);
+            if(scope->variables->type == tmp) // Parameter type esta de acordo com a expressao na invocacao
+            else{
+                node->error = (char*)malloc(100 * sizeof(char));
+                //VER ISTO.. WTF?!
+                //De acordo com exemplos é assim mas nao faz sentido
+                sprintf(node->error,"Line %d, column %d: Cannot find symbol %s",node->token->l,node->token->col,node->token->val);
+            }  
+        }
+    }
+    else{
+        node->error = (char*)malloc(100 * sizeof(char));
+        sprintf(node->error,"Line %d, column %d: Cannot find symbol %s",node->token->l,node->token->col,node->token->val);
+    }   
+    
+
+}
+
+void check_parseArgs(Structure* node ,char* scope_name){
+    
+    Table_element* id =  search_variable(node->token->val,scope_name);
+    if(id != NULL){  //variable exists
+        basic_type temp = check_expression(node->brother,scope_name)
+        //Int  -> Atoi (String)
+        if(id->type == integer && temp == integer); //Meter boolean a true de ser usado ---> Assign Types are correct
+        else{
+            node->error = (char*)malloc(100 * sizeof(char));
+            sprintf(node->error,"Line %d, column %d: Operator %s cannot be applied to types %s, %s",node->token->l,node->token->col,node->token->val,type_to_string(id->type),type_to_string(temp));
+        }
+    }
+    else{  //variable doesn´t exist locally or globally
+        node->error = (char*)malloc(100 * sizeof(char));
+        sprintf(node->error,"Line %d, column %d: Cannot find symbol %s",node->token->l,node->token->col,node->token->val);
+    }
+}
+
+void check_statement(Structure* node ,char* scope_name){
+
+    if(strcmp(node->token->val, "If")==0 || strcmp(node->token->val, "For")==0) {
+        basic_type tmp = check_expression(node->child,scope_name);
+        if (tmp != boolean){
+            node->error = (char*)malloc(100 * sizeof(char));
+            sprintf(node->error,"Line %d, column %d: Incompatible type %s in %s statement",node->token->l,node->token->col,type_to_string(tmp),node->token->val);
+        }
+    }
+    else if(strcmp(node->token->val, "Return") == 0){
+        if(node->child ==  NULL){ // no expression and return is none
+        //LOOK AT HERE!!
+        }
+        else{
+            basic_type tmp = check_expression(node->child,scope_name);
+            Scope_element* scope = get_scope(scope_name);
+            if(tmp.type == scope.type);
+            else{
+                node->error = (char*)malloc(100 * sizeof(char));
+                sprintf(node->error,"Line %d, column %d: Incompatible type %s in %s statement",node->token->l,node->token->col,type_to_string(tmp),node->token->val); 
+            }
+        }
+    }
+    else{
+        check_program(node->child, scope_name);
+        check_program(node->brother, scope_name);  
+    }
+}
 
 void check_variable(Structure* node ,char* scope_name){
-    int error_count=0;
 
     Table_element* new = insert_variable(node->token->val, scope_name);
     
     if(new == NULL){
-        printf("Line  %d , column %d : Symbol %s already defined!\n", node->token->val);
+        node->error = (char*)malloc(100 * sizeof(char));
+        sprintf(node->error,"Line %d, column %d: Symbol %s already defined",node->token->l,node->token->col,node->token->val);
     }
     return;
 }
 
 void check_assign(Structure* node, char* scope_name){
 
-    Table_element* id =  search_variable(node->child->token->val,scope_name);
+    Table_element* id =  search_variable(node->token->val,scope_name);
     if(id != NULL){  //variable exists
-       if(check_expression(node->brother, id)) /*Meter boolean a true de ser usado*/ ; //Assign Types are correct
+        basic_type tmp = check_expression(node->brother,scope_name);
+        if(id->type == tmp); //Assign Types are correct
+        else{
+            node->error = (char*)malloc(100 * sizeof(char));
+            sprintf(node->error,"Line %d, column %d: Operator %s cannot be applied to types %s, %s",node->token->l,node->token->col,node->token->val,type_to_string(id->type),type_to_string(tmp));
+        }
     }
     else{  //variable doesn´t exist locally or globally
-        printf("Line  %d , column %d: Cannot find symbol %s\n", node->child->token->val);
+        node->error = (char*)malloc(100 * sizeof(char));
+        sprintf(node->error,"Line %d, column %d: Cannot find symbol %s",node->token->l,node->token->col,node->token->val);
     }
     return;
 }
 
-void check_expression(Structure* node, Table_element* id_brother, char* scope_name){
+void type_to_node(Structure* node, basic_type type){
+    switch (node->token->val){
+        case "Or":
+        case "And":
+        case "Lt":
+        case "Gt":
+        case "Le":
+        case "Ge":
+        case "Eq":
+        case "Ne":
+        case "Not":
+            node->value_type = boolean;
+            break;
+        case "Add":
+        case "Sub":
+        case "Mul":
+        case "Div":
+        case "Mod":
+        case "Minus":
+        case "Plus":
+            node->value_type = type;
+            break;
+        default:
+            break;
+    }
+    return;
+}
+void type_error(Structure* node,basic_type t1){
     
-    if(node->child   != NULL)   check_expression(node->child, id_brother, scope_name);
-    if(node->brother != NULL)   check_expression(node->brother, id_brother, scope_name);
+    node->error = (char*)malloc(100 * sizeof(char));
+    if(node->token->val == "Not")   sprintf(node->error,"Line %d, column %d: Operator %s cannot be applied to type %s",node->token->l,node->token->col,node->token->val,type_to_string(node->value_type));
+    else    sprintf(node->error,"Line %d, column %d: Operator %s cannot be applied to types %s, %s",node->token->l,node->token->col,node->token->val,type_to_string(node->value_type),type_to_string(t1));
+    return;
+}
 
-
-    if(node->token->type == id){
-        Table_element* tmp =  search_variable(node->token->val,scope_name);
-        if (tmp != NULL) {  //Existe
-
-            if(tmp.type == id_brother.type){ //Tipo igual ao lado esquerdo
-                
-            }
-            else printf("Line  %d , column %d: Incompatible type %s in %s statement\n", temp->type);
-            
-        }else{
-
-        }
+basic_type check_expression(Structure* node, char* scope_name){
+    basic_type temp;
+    basic_type final_type;
+    if(node->child != NULL){
+        temp = check_expression(node->child, scope_name);
+    } 
+    if(node->brother != NULL) {
+        temp = check_expression(node->brother, scope_name);
     }
-
-    else{
+    if(node->child != NULL || node->brother != NULL){
+        if(temp == undef) return undef;
         
+        switch(node->type){
+            case intlit:
+                final_type = integer == temp ? integer : undef;
+                if(final_type == undef) type_error(node,temp);
+                break;
+            case reallit:
+                final_type = float32 == temp ? float32 : undef;
+                if(final_type == undef) type_error(node,temp);
+                break;
+            case strlit:
+                final_type = string == temp ? string : undef;
+                if(final_type == undef) type_error(node,temp);
+                break;
+            case id:
+                Table_element* tmp =  search_variable(node->token->val,scope_name);
+                if (tmp != NULL) {  //Existe
+                    final_type = tmp->type == temp ? temp : undef;  
+                    if(final_type == undef) type_error(node,temp);          
+                }else{
+                    final_type = undef;
+                    node->error = (char*)malloc(100 * sizeof(char));
+                    sprintf(node->error,"Line %d, column %d: Cannot find symbol %s",node->token->l,node->token->col,tmp);
+                }
+            default:
+                final_type = none;
+                break;
+        }
+    }else{
+        switch(node->type){
+            case intlit:
+                final_type = integer;
+                break;
+            case reallit:
+                final_type = float32;
+                break;
+            case strlit:
+                final_type = string;
+                break;
+            case id:
+                Table_element* tmp =  search_variable(node->token->val,scope_name);
+                if (tmp != NULL) {  //Existe
+                    final_type = tmp->type;            
+                }else{
+                    final_type = undef;
+                    node->error = (char*)malloc(100 * sizeof(char));
+                    sprintf(node->error,"Line %d, column %d: Cannot find symbol %s",node->token->l,node->token->col,tmp);
+                }
+            default:
+                final_type = none;
+                break;
+        }
+        type_to_node(node,final_type);
+        return final_type;
     }
- return;
 }

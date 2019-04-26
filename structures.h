@@ -33,6 +33,7 @@ typedef struct _s2{
 typedef struct _s1{
   Type_node type;
   basic_type value_type;
+  char* error;
   Token *token;
   struct _s1 *brother;
   struct _s1 *child;
