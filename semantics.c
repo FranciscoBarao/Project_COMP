@@ -1,6 +1,9 @@
 #include "structures.h"
 #include "functions.h"
+#include "semantics.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 basic_type type_to_basic(Type_node type){
     switch (type)
@@ -36,7 +39,7 @@ void check_program_run2(Structure *node, char* scope_name ){ //Second run of tre
         switch(tmp->type) {
             case VarDecl:
                 //Function to check Variable "used_boolean".. if false -> error -> declared but not used
-                check_variable_usage(tmp->child, scope_name);
+                check_variable(tmp->child, scope_name);
                 break;
             case Call: //Function Invocation 
                 //Check if they exist and if params are well
@@ -195,9 +198,9 @@ void type_to_node(Structure* node, basic_type type){
         }
     }
 
-    char* boolean_options[7] ={"Add","Sub","Mul","Div","Mod","Minus","Plus"};
-    for(int i=0;i< sizeof(boolean_options)/sizeof(boolean_options[0]);i++){
-        if(boolean_options[i] != NULL && strcmp(node->token->val,boolean_options[i])==0){
+    char* boolean_options_2[7] ={"Add","Sub","Mul","Div","Mod","Minus","Plus"};
+    for(int i=0;i< sizeof(boolean_options_2)/sizeof(boolean_options_2[0]);i++){
+        if(boolean_options_2[i] != NULL && strcmp(node->token->val,boolean_options_2[i])==0){
             node->value_type = type;
         }
     }
@@ -236,6 +239,7 @@ void type_error(Structure* node,basic_type t1){
 }
 
 basic_type check_expression(Structure* node, char* scope_name){
+    Table_element* tmp;
     basic_type temp;
     basic_type final_type;
     if(node->child != NULL){
@@ -261,14 +265,14 @@ basic_type check_expression(Structure* node, char* scope_name){
                 if(final_type == undef) type_error(node,temp);
                 break;
             case id:
-                Table_element* tmp =  search_variable(node->token->val,scope_name);
+                tmp =  search_variable(node->token->val,scope_name);
                 if (tmp != NULL) {  //Existe
                     final_type = tmp->type == temp ? temp : undef;  
                     if(final_type == undef) type_error(node,temp);          
                 }else{
                     final_type = undef;
                     node->error = (char*)malloc(100 * sizeof(char));
-                    sprintf(node->error,"Line %d, column %d: Cannot find symbol %s",node->token->l,node->token->col,tmp);
+                    sprintf(node->error,"Line %d, column %d: Cannot find symbol %s",node->token->l,node->token->col,tmp->name);
                 }
             default:
                 final_type = none;
@@ -286,13 +290,13 @@ basic_type check_expression(Structure* node, char* scope_name){
                 final_type = string;
                 break;
             case id:
-                Table_element* tmp =  search_variable(node->token->val,scope_name);
+                tmp =  search_variable(node->token->val,scope_name);
                 if (tmp != NULL) {  //Existe
                     final_type = tmp->type;            
                 }else{
                     final_type = undef;
                     node->error = (char*)malloc(100 * sizeof(char));
-                    sprintf(node->error,"Line %d, column %d: Cannot find symbol %s",node->token->l,node->token->col,tmp);
+                    sprintf(node->error,"Line %d, column %d: Cannot find symbol %s",node->token->l,node->token->col,tmp->name);
                 }
             default:
                 final_type = none;

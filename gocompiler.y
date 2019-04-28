@@ -3,6 +3,7 @@
     #include <stdlib.h>
     #include <string.h>
     #include "functions.h"
+    #include "semantics.h"
     #include "y.tab.h"
 
     int yylex(void);
@@ -363,6 +364,8 @@ int main(int argc, char* argv[]){
         free_tree(myprogram);
     }
     if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-s")==0) {
+        check_program(myprogram, "global");
+        check_program_run2(myprogram, "global");
         show_table();
         print_annotated_tree(myprogram, 0, "global", 0);
         return 0;
