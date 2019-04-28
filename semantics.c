@@ -1,7 +1,34 @@
 #include "structures.h"
-#include "semantics.h"
-#include "symbol_table.h"
+#include "functions.h"
 #include <stdio.h>
+
+basic_type type_to_basic(Type_node type){
+    switch (type)
+    {
+    case reallit:
+        return float32;
+    case intlit:
+        return integer;
+    case strlit:
+        return string;
+    default:
+        return none;
+    }
+}
+
+int get_number_variables(Structure *node){
+    Structure *tmp = node->child;
+    int number_params = 0;
+    while(tmp->type != FuncParams){
+        tmp = tmp->brother;
+    }
+    tmp = tmp->child;
+    while(tmp != NULL && tmp->type == ParamDecl){
+        tmp->brother;
+        number_params += 1;
+    }
+    return number_params;
+}
 
 void check_program_run2(Structure *node, char* scope_name ){ //Second run of tree
     Structure* tmp = node;
@@ -36,7 +63,7 @@ void check_program(Structure *node, char* scope_name ){ //First run of tree
                 break;
             case FuncHeader:
                 //[FALTA ISTO]
-                //AddScope(Node->token->val, number_parameters) --> while node->child->brother == ParamDecl count++
+                add_scope(tmp->token->val, get_number_variables(tmp));
                 check_program(tmp->child, tmp->token->val);
                 check_program(tmp->brother, tmp->token->val);
                 break;
@@ -58,10 +85,12 @@ void check_program(Structure *node, char* scope_name ){ //First run of tree
 void check_function_invocation(Structure* node ,char* scope_name){
     Scope_element* scope = get_scope(node->token->val); // Bem?
     if(scope != NULL){
-        for(i=0;i<scope.number_of_params){
+        for(int i=0;i<scope->number_of_params; i++){
             //[IS THIS RIGHT?]
             basic_type tmp = check_expression(node->child,scope_name);
-            if(scope->variables->type == tmp) // Parameter type esta de acordo com a expressao na invocacao
+            if(scope->variables->type == tmp){
+
+            } // Parameter type esta de acordo com a expressao na invocacao
             else{
                 node->error = (char*)malloc(100 * sizeof(char));
                 //VER ISTO.. WTF?!
@@ -82,9 +111,11 @@ void check_parseArgs(Structure* node ,char* scope_name){
     
     Table_element* id =  search_variable(node->token->val,scope_name);
     if(id != NULL){  //variable exists
-        basic_type temp = check_expression(node->brother,scope_name)
+        basic_type temp = check_expression(node->brother,scope_name);
         //Int  -> Atoi (args[int])
-        if(id->type == integer && temp == integer); //Assign Types are correct
+        if(id->type == integer && temp == integer){
+
+        } //Assign Types are correct
         //[NEEDS DOING] --> Meter boolean a true de ser usado  
         else{
             node->error = (char*)malloc(100 * sizeof(char));
@@ -113,7 +144,7 @@ void check_statement(Structure* node ,char* scope_name){
         else{
             basic_type tmp = check_expression(node->child,scope_name);
             Scope_element* scope = get_scope(scope_name);
-            if(tmp.type == scope.type);
+            if(tmp == scope->type);
             else{
                 node->error = (char*)malloc(100 * sizeof(char));
                 sprintf(node->error,"Line %d, column %d: Incompatible type %s in %s statement",node->token->l,node->token->col,type_to_string(tmp),node->token->val); 
@@ -128,7 +159,7 @@ void check_statement(Structure* node ,char* scope_name){
 
 void check_variable(Structure* node ,char* scope_name){
 
-    Table_element* new = insert_variable(node->token->val, scope_name);
+    Table_element* new = insert_variable(node->token->val, scope_name, type_to_basic(node->type));
     
     if(new == NULL){
         node->error = (char*)malloc(100 * sizeof(char));
@@ -158,15 +189,15 @@ void check_assign(Structure* node, char* scope_name){
 
 void type_to_node(Structure* node, basic_type type){
     char* boolean_options[9] ={"Or","And","Lt","Gt","Le","Ge","Eq","Ne","Not"};
-    for(i=0;i< sizeof(boolean_options)/sizeof(boolean_options[0];i++)){
-        if(options[i] != NULL && strcmp(node->token->val,boolean_options[i])==0){
+    for(int i=0;i< sizeof(boolean_options)/sizeof(boolean_options[0]);i++){
+        if(boolean_options[i] != NULL && strcmp(node->token->val,boolean_options[i])==0){
             node->value_type = boolean;
         }
     }
 
     char* boolean_options[7] ={"Add","Sub","Mul","Div","Mod","Minus","Plus"};
-    for(i=0;i< sizeof(boolean_options)/sizeof(boolean_options[0];i++)){
-        if(options[i] != NULL && strcmp(node->token->val,boolean_options[i])==0){
+    for(int i=0;i< sizeof(boolean_options)/sizeof(boolean_options[0]);i++){
+        if(boolean_options[i] != NULL && strcmp(node->token->val,boolean_options[i])==0){
             node->value_type = type;
         }
     }
