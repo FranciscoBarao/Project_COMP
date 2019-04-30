@@ -5,89 +5,6 @@
 
 extern Scope_element* scope_table;
 
-Structure* create_node(char* val, int col, int l, Type_node type, Structure *child){
-    Structure* node = (Structure*)malloc(sizeof(Structure));
-    Token* token = (Token*)malloc(sizeof(Token));
-    token->val = val;
-    token->col = col;
-    token->l = l;
-    node->brother = NULL;
-    node->child = child;
-    node->token = token;
-    node->type = type;
-
-    return node;
-}
-
-void add_brother(Structure *son, Structure *brother){
-    if(son != NULL){
-        while(son->brother != NULL){
-            son = son->brother;
-        }
-        son->brother = brother;
-    }
-    //printf("%s\n", brother->token->val);
-}
-
-Scope_element* add_scope(char* scope_name, int number_of_params){
-    Scope_element *new_scope = (Scope_element*) malloc(sizeof(Scope_element));
-    Scope_element *aux;
-    Scope_element *previous;
-
-    strcpy(new_scope->name, scope_name);
-	new_scope->number_of_params = number_of_params;
-	new_scope->next=NULL;
-    new_scope->variables=NULL;
-    if(scope_table){
-        for(aux=scope_table; aux; previous=aux, aux=aux->next){
-			if(strcmp(aux->name, scope_name)==0){
-                return NULL;
-            }
-        }
-        previous->next=new_scope;	//adiciona ao final da lista
-    }else{
-        scope_table = new_scope;
-    }
-}
-
-Scope_element *get_scope(char* scope_name){
-    Scope_element *aux;
-
-    for(aux=scope_table; aux; aux=aux->next)
-        if(strcmp(aux->name, scope_name)==0)
-            return aux;
-
-    return NULL;
-}
-
-//Insere um novo identificador na cauda de uma lista ligada de simbolo
-Table_element *insert_variable(char* scope_name, char *str, basic_type t){
-    Scope_element *scope = get_scope(scope_name);
-    if(scope !=NULL){
-        Table_element *symbol_table = scope->variables;
-        Table_element *new_symbol=(Table_element*) malloc(sizeof(Table_element));
-        Table_element *aux;
-        Table_element* previous;
-
-        strcpy(new_symbol->name, str);
-        new_symbol->type=t;
-        new_symbol->next=NULL;	
-
-        if(symbol_table){	
-            //Procura cauda da lista e verifica se simbolo ja existe
-            for(aux=symbol_table; aux; previous=aux, aux=aux->next)
-                if(strcmp(aux->name, str)==0)
-                    return NULL;
-            
-            previous->next=new_symbol;	//adiciona ao final da lista
-        }
-        else	//symtab tem um elemento -> o novo simbolo
-            symbol_table=new_symbol;		
-        
-        return new_symbol; 
-    }
-}
-
 const char* type_to_string(basic_type t){
     switch(t) {
         case integer:
@@ -114,8 +31,116 @@ const char* type_to_string(basic_type t){
     }
 }
 
+basic_type type_to_basic(Type_node type){
+    switch (type){
+    case reallit:
+        return float32;
+    case intlit:
+        return integer;
+    case strlit:
+        return string;
+    default:
+        return none;
+    }
+}
+
+basic_type val_to_basic(char *val){
+    if(strcmp(val, "Int")==0){
+        return integer;
+    }else if(strcmp(val, "Float32")==0){
+        return float32;
+    }else if(strcmp(val, "String")==0){
+        return string;
+    }else if(strcmp(val, "Bool")==0){
+        return boolean;
+    }else{
+        return none;
+    }
+}
+
+Structure* create_node(char* val, int col, int l, Type_node type, Structure *child){
+    Structure* node = (Structure*)malloc(sizeof(Structure));
+    Token* token = (Token*)malloc(sizeof(Token));
+    token->val = val;
+    token->col = col;
+    token->l = l;
+    node->brother = NULL;
+    node->child = child;
+    node->token = token;
+    node->type = type;
+
+    return node;
+}
+
+void add_brother(Structure *son, Structure *brother){
+    if(son != NULL){
+        while(son->brother != NULL){
+            son = son->brother;
+        }
+        son->brother = brother;
+    }
+}
+
+Scope_element* add_scope(char* scope_name, int number_of_params, basic_type type){
+    Scope_element *new_scope = (Scope_element*) malloc(sizeof(Scope_element));
+    Scope_element *aux;
+    Scope_element *previous;
+
+    strcpy(new_scope->name, scope_name);
+	new_scope->number_of_params = number_of_params;
+	new_scope->next=NULL;
+    new_scope->variables=NULL;
+    new_scope->type = type;
+    if(scope_table){
+        for(aux=scope_table; aux; previous=aux, aux=aux->next){
+			if(strcmp(aux->name, scope_name)==0){
+                return NULL;
+            }
+        }
+        previous->next=new_scope;	//adiciona ao final da lista
+    }else{
+        scope_table = new_scope;
+    }
+}
+
+Scope_element *get_scope(char* scope_name){
+    Scope_element *aux;
+
+    for(aux=scope_table; aux; aux=aux->next)
+        if(strcmp(aux->name, scope_name)==0)
+            return aux;
+
+    return NULL;
+}
+
+//Insere um novo identificador na cauda de uma lista ligada de simbolo
+Table_element *insert_variable(char* scope_name, char *str, basic_type t){
+    Scope_element *scope = get_scope(scope_name);
+    if(scope != NULL){
+        Table_element *symbol_table = scope->variables;
+        Table_element *new_symbol=(Table_element*) malloc(sizeof(Table_element));
+        Table_element *aux;
+        Table_element* previous;
+
+        strcpy(new_symbol->name, str);
+        new_symbol->type=t;
+        new_symbol->next=NULL;
+        if(symbol_table){	
+            //Procura cauda da lista e verifica se simbolo ja existe
+            for(aux=symbol_table; aux; previous=aux, aux=aux->next)
+                if(strcmp(aux->name, str)==0)
+                    return NULL;
+            
+            previous->next=new_symbol;	//adiciona ao final da lista
+        }
+        else	//symtab tem um elemento -> o novo simbolo
+            scope->variables = new_symbol;		
+        
+        return new_symbol; 
+    }
+}
+
 void show_table(){
-    printf("\n");
     Scope_element *aux_scope;
     Scope_element *scope;
     Table_element *aux;
@@ -123,10 +148,25 @@ void show_table(){
     int inside_params;
     for(aux_scope = scope_table; aux_scope; aux_scope=aux_scope->next){
         inside_params = 0; // Variable used to check if variable is still a param of the function
-        if(strcmp(aux_scope->name, "global")){
-            printf("==== Global Symbol Table ====\n");
+        if(strcmp(aux_scope->name, "global") == 0){
+            printf("===== Global Symbol Table =====\n");
         }else{
-            printf("==== Function %s() Symbol Table ====\n", aux_scope->name);
+            printf("===== Function %s(", aux_scope->name);
+            // percorre as variaveis e imprime os tipos delas
+            scope = get_scope(aux_scope->name);
+            if(scope != NULL){
+                param = scope->variables;
+                if(param != NULL){
+                    for(int i=0; i<scope->number_of_params; i++){
+                        printf("%s", type_to_string(param->type));
+                        if(i < scope->number_of_params-1){
+                            printf(",");
+                        }
+                        param = param->next;
+                    }
+                }
+            }
+            printf(") Symbol Table =====\n");
             printf("return\t\t%s\n", type_to_string(aux_scope->type));
         }
         for(aux=aux_scope->variables; aux; aux=aux->next){
@@ -173,6 +213,9 @@ Table_element *search_variable(char* scope_name, char *str){
             if(strcmp(aux->name, str)==0)
                 return aux;
         }
+    }
+    if(strcmp(scope_name, "global") != 0){
+        return search_variable("global", str);
     }
     return NULL;
 }

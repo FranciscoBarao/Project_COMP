@@ -13,6 +13,7 @@
 
     int is_error = 0;
     Structure* myprogram;
+
 %}
 %define parse.error verbose
 //Values
@@ -254,6 +255,7 @@ int return_column();
 
 void print_annotated_tree(Structure *node, int number_of_points, char* scope, int inside_expression){
     Structure* tmp = node;
+    Table_element *variable;
     char* another_scope = scope;
     int expression = inside_expression;
     int original_value = number_of_points;
@@ -265,7 +267,13 @@ void print_annotated_tree(Structure *node, int number_of_points, char* scope, in
         switch(tmp->type) {
             case id :
                 if(inside_expression){
-                    printf("Id(%s) - %s\n", tmp->token->val, type_to_string(search_variable(scope, tmp->token->val)->type));
+                    variable = search_variable(scope, tmp->token->val);
+                    if(variable->type == function){
+                        printf("Id(%s) - (%s)\n", tmp->token->val, type_to_string(get_scope(variable->name)->type));
+
+                    }else{
+                        printf("Id(%s) - %s\n", tmp->token->val, type_to_string(variable->type));
+                    }
                 }else{
                     printf("Id(%s)\n", tmp->token->val);
                 }
@@ -280,7 +288,15 @@ void print_annotated_tree(Structure *node, int number_of_points, char* scope, in
                 printf("StrLit(%s) - string\n", tmp->token->val);
                 break;
             case Expression:
-                printf("%s\n - %s", tmp->token->val, type_to_string(tmp->value_type));
+                printf("%s - %s\n", tmp->token->val, type_to_string(tmp->value_type));
+                expression = 1;
+                break;
+            case Call:
+                printf("%s - %s\n", tmp->token->val, type_to_string(tmp->value_type));
+                expression = 1;
+                break;
+            case ParseArgs:
+                printf("%s - %s\n", tmp->token->val, type_to_string(tmp->value_type));
                 expression = 1;
                 break;
             case FuncDecl:
@@ -360,12 +376,10 @@ int main(int argc, char* argv[]){
     yyparse();
     if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-t")==0){
         print_tree(myprogram, 0);
-    }else{
-        free_tree(myprogram);
-    }
-    if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-s")==0) {
+    }else if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-s")==0) {
+        add_scope("global", 0, none);
         check_program(myprogram, "global");
-        check_program_run2(myprogram, "global");
+        //check_program_run2(myprogram, "global");
         show_table();
         print_annotated_tree(myprogram, 0, "global", 0);
         return 0;
