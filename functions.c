@@ -9,25 +9,20 @@ const char* type_to_string(basic_type t){
     switch(t) {
         case integer:
             return "int";
-            break;
         case string:
             return "string";
-            break;
         case boolean:
             return "bool";
-            break;
         case float32:
             return "float32";
-            break;
         case none:
             return "none";
-            break;
         case undef:
             return "undef";
-            break;
+        case function:
+            return "teste";
         default:
             return "error";
-            break;
     }
 }
 
@@ -68,6 +63,7 @@ Structure* create_node(char* val, int col, int l, Type_node type, Structure *chi
     node->child = child;
     node->token = token;
     node->type = type;
+    node->value_type = none;
 
     return node;
 }

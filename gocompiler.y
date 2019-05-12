@@ -159,7 +159,7 @@ statement:
     ;
 
 assign_statement:
-        id_state ASSIGN expression                             {$$=create_node("Assign",0,0,Statement, $1); add_brother($1, $3);}
+        id_state ASSIGN expression                             {$$=create_node("Assign",0,0,Assign, $1); add_brother($1, $3);}
     ;
 
 braces_statement:
@@ -269,8 +269,28 @@ void print_annotated_tree(Structure *node, int number_of_points, char* scope, in
                 if(inside_expression){
                     variable = search_variable(scope, tmp->token->val);
                     if(variable->type == function){
-                        printf("Id(%s) - (%s)\n", tmp->token->val, type_to_string(get_scope(variable->name)->type));
-
+                        printf("Id(%s) - (", tmp->token->val);
+                        // percorre as variaveis e imprime os tipos delas
+                        Scope_element *aux_scope = get_scope(tmp->token->val);
+                        Table_element *param;
+                        if(aux_scope != NULL){
+                            param = aux_scope->variables;
+                            if(param != NULL){
+                                for(int i=0; i<aux_scope->number_of_params; i++){
+                                    printf("%s", type_to_string(param->type));
+                                    if(i < aux_scope->number_of_params-1){
+                                        printf(",");
+                                    }
+                                    param = param->next;
+                                }
+                            }
+                        }
+                        printf(")\n");
+                        /*if(type_to_string(get_scope(variable->name)->type == none)){
+                            printf("Id(%s) - ()\n", tmp->token->val);
+                        }else{
+                            printf("Id(%s) - (%s)\n", tmp->token->val, type_to_string(get_scope(variable->name)->type));
+                        }*/
                     }else{
                         printf("Id(%s) - %s\n", tmp->token->val, type_to_string(variable->type));
                     }
@@ -292,7 +312,11 @@ void print_annotated_tree(Structure *node, int number_of_points, char* scope, in
                 expression = 1;
                 break;
             case Call:
-                printf("%s - %s\n", tmp->token->val, type_to_string(tmp->value_type));
+                if(tmp->value_type == none){
+                    printf("%s\n", tmp->token->val);
+                }else{
+                    printf("%s - %s\n", tmp->token->val, type_to_string(tmp->value_type));
+                }
                 expression = 1;
                 break;
             case ParseArgs:
@@ -302,6 +326,16 @@ void print_annotated_tree(Structure *node, int number_of_points, char* scope, in
             case FuncDecl:
                 printf("%s\n", tmp->token->val);
                 another_scope = tmp->child->child->token->val;
+                break;
+            case Assign:
+                printf("%s - %s\n", tmp->token->val, type_to_string(tmp->value_type));
+                expression = 1;
+                break;
+            case Statement:
+                if(strcmp(tmp->token->val, "Return") == 0  || strcmp(tmp->token->val, "Print") == 0 || strcmp(tmp->token->val, "If") == 0){
+                    expression = 1;
+                }
+                printf("%s\n", tmp->token->val);
                 break;
             default :
                 printf("%s\n", tmp->token->val);
@@ -379,7 +413,7 @@ int main(int argc, char* argv[]){
     }else if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-s")==0) {
         add_scope("global", 0, none);
         check_program(myprogram, "global");
-        //check_program_run2(myprogram, "global");
+        check_second_run(myprogram, "global");
         show_table();
         print_annotated_tree(myprogram, 0, "global", 0);
         return 0;

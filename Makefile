@@ -19,7 +19,7 @@ compile_yacc_flags: gocompiler.l gocompiler.y
 
 
 compile_main: y.tab.c lex.yy.c functions.c semantics.c
-	gcc -o  main y.tab.c lex.yy.c functions.c semantics.c
+	gcc -o main y.tab.c lex.yy.c functions.c semantics.c
 
 run: 
 		./main -l

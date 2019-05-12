@@ -2,7 +2,7 @@
 
 basic_type type_to_basic(Type_node type);
 int get_number_variables(Structure *node);
-void check_program_run2(Structure *node, char* scope_name );
+void check_second_run(Structure *node, char* scope_name );
 void check_program(Structure *node, char* scope_name );
 void check_function_invocation(Structure* node ,char* scope_name);
 void check_parseArgs(Structure* node ,char* scope_name);
