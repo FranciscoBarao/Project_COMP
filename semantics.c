@@ -208,14 +208,13 @@ basic_type check_expression(Structure* node, char* scope_name){
     if(node->type == Block){
         return none;
     }else if(node->type == Call){
-        final_type = get_scope(node->child->token->val)->type;
-        node->type = final_type;
-        return final_type;
+        node->type = get_scope(node->child->token->val)->type;
+        return node->type;
     }
     if(node->child != NULL){
         child_type = check_expression(node->child, scope_name);
     } 
-    else if(node->brother != NULL) {
+    if(node->brother != NULL) {
         brother_type = check_expression(node->brother, scope_name);
     }
 
