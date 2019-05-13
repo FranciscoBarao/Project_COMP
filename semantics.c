@@ -24,16 +24,31 @@ void check_second_run(Structure *node, char* scope_name ){ //Second run of tree
     if(node == NULL) return;
     Structure* tmp = node;
     switch(tmp->type) {
+        case FuncHeader:
+            check_second_run(tmp->child, tmp->child->token->val);
+            check_second_run(tmp->brother, tmp->child->token->val);
+            break;
         case VarDecl:
             //Function to check Variable "used_boolean".. if false -> error -> declared but not used
             //check_variable(tmp, scope_name, tmp->child->brother->token->val, val_to_basic(tmp->child->token->val));
             check_second_run(tmp->brother, scope_name);
             break;
+        case Assign:
+            check_assign(tmp, scope_name);
+            check_second_run(tmp->brother, scope_name);
+            break;
+        case Statement:
+            check_statement(tmp, scope_name);
+            check_second_run(tmp->brother, scope_name);  
+            break;
+        case ParseArgs:
+            check_parseArgs(tmp->child, scope_name);
+            check_second_run(tmp->brother, scope_name);  
+            break;
         case Call: //Function Invocation 
             //Check if they exist and if params are well
             tmp->value_type = get_scope(tmp->child->token->val)->type;
-            //check_function_invocation(tmp->child, scope_name);
-            check_second_run(tmp->child, scope_name);
+            check_function_invocation(tmp->child, scope_name);
             check_second_run(tmp->brother, scope_name);
             break;
         default:
@@ -52,27 +67,16 @@ void check_program(Structure *node, char* scope_name ){ //First run of tree
             check_variable(tmp, scope_name, tmp->child->brother->token->val, val_to_basic(tmp->child->token->val));
             check_program(tmp->brother, scope_name);  
             break;
-        case Assign:
-            check_assign(tmp, scope_name); 
-            check_program(tmp->brother, scope_name);  
-            break;
         case FuncHeader:
             add_scope(tmp->child->token->val, get_number_params(tmp), val_to_basic(tmp->child->brother->token->val));
             check_variable(tmp, scope_name, tmp->child->token->val, function);
             check_program(tmp->child, tmp->child->token->val);
             check_program(tmp->brother, tmp->child->token->val);
             break;
-        case Statement:
-            check_statement(tmp, scope_name);
-            check_program(tmp->brother, scope_name);  
-            break;
-        case ParseArgs:
-            check_parseArgs(tmp->child, scope_name);
-            check_program(tmp->brother, scope_name);  
-            break;
         case ParamDecl:
             check_variable(tmp, scope_name, tmp->child->brother->token->val, val_to_basic(tmp->child->token->val));
             check_program(tmp->brother, scope_name);
+            break;
         default :
             check_program(tmp->child, scope_name);
             check_program(tmp->brother, scope_name);  
@@ -84,7 +88,7 @@ void check_function_invocation(Structure* node ,char* scope_name){
     Scope_element* scope = get_scope(node->token->val); // Bem?
     if(scope != NULL){
         for(int i=0;i<scope->number_of_params; i++){
-            basic_type tmp = check_expression(node->child,scope_name);
+            basic_type tmp = check_expression(node->brother,scope_name);
             // FALTA AQUI UM CICLO FOR PARA PERCORRER TODAS AS VARIAVEIS E VERIFICAR OS TIPOS
             if(scope->variables->type == tmp){
 
@@ -144,8 +148,9 @@ void check_statement(Structure* node ,char* scope_name){
         }
     }
     else{
-        check_program(node->child, scope_name);
+        check_second_run(node->child, scope_name);
     }
+    check_second_run(node->child->brother, scope_name);
 }
 
 void check_variable(Structure* node ,char* scope_name, char *str, basic_type t){
@@ -182,6 +187,7 @@ void type_to_node(Structure* node, basic_type type){
     for(int i=0;i<9;i++){
         if(strcmp(node->token->val,boolean_options[i])==0){
             node->value_type = boolean;
+            return;
         }
     }
     node->value_type = type;
@@ -195,14 +201,17 @@ void type_error(Structure* node,basic_type t1){
 }
 
 basic_type check_expression(Structure* node, char* scope_name){
-    if(node->type == Block){
-        check_program(node, scope_name);
-        return none;
-    }
     Table_element* tmp;
     basic_type child_type;
     basic_type brother_type;
     basic_type final_type;
+    if(node->type == Block){
+        return none;
+    }else if(node->type == Call){
+        final_type = get_scope(node->child->token->val)->type;
+        node->type = final_type;
+        return final_type;
+    }
     if(node->child != NULL){
         child_type = check_expression(node->child, scope_name);
     } 
@@ -212,9 +221,13 @@ basic_type check_expression(Structure* node, char* scope_name){
 
     if(node->brother != NULL && node->child != NULL){
         if(child_type != brother_type){
-        // Fazer a parte do erro caso sejam diferentes
+            if(node->brother->type == Block){
+                final_type = child_type;
+            }else{
+                // Parte de errovem para aqui
+            }
         }else{
-            final_type = child_type; // Aqui é indiferente qual deles é
+            final_type = child_type; // Tem de ser o child
         }
     }else if(node->brother != NULL){
         switch(node->type){
