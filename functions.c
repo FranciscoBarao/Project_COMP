@@ -63,7 +63,7 @@ Structure* create_node(char* val, int col, int l, Type_node type, Structure *chi
     node->child = child;
     node->token = token;
     node->type = type;
-    node->value_type = undef;
+    node->value_type = none;
 
     return node;
 }

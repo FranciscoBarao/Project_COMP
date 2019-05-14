@@ -268,6 +268,7 @@ void print_annotated_tree(Structure *node, int number_of_points, char* scope, in
             case id :
                 if(inside_expression){
                     variable = search_variable(scope, tmp->token->val);
+                    //printf("Wtf a serio?\n");
                     if(variable->type == function){
                         printf("Id(%s) - (", tmp->token->val);
                         // percorre as variaveis e imprime os tipos delas
