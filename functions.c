@@ -63,7 +63,7 @@ Structure* create_node(char* val, int col, int l, Type_node type, Structure *chi
     node->child = child;
     node->token = token;
     node->type = type;
-    node->value_type = none;
+    node->value_type = undef;
 
     return node;
 }
@@ -97,6 +97,7 @@ Scope_element* add_scope(char* scope_name, int number_of_params, basic_type type
     }else{
         scope_table = new_scope;
     }
+    return new_scope;
 }
 
 Scope_element *get_scope(char* scope_name){
@@ -134,6 +135,7 @@ Table_element *insert_variable(char* scope_name, char *str, basic_type t){
         
         return new_symbol; 
     }
+    return NULL;
 }
 
 void show_table(){

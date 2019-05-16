@@ -42,7 +42,7 @@ void check_second_run(Structure *node, char* scope_name ){ //Second run of tree
             check_second_run(tmp->brother, scope_name);  
             break;
         case ParseArgs:
-            check_parseArgs(tmp->child, scope_name);
+            node->value_type = check_parseArgs(tmp->child, scope_name);
             check_second_run(tmp->brother, scope_name);  
             break;
         case Call: //Function Invocation 
@@ -94,11 +94,7 @@ void check_function_invocation(Structure* node ,char* scope_name){
     tmp = tmp->brother;
     if(scope != NULL){
         for(int i=0;i<scope->number_of_params; i++){
-            if(tmp->type == Expression){
-                type_tmp = check_expression(tmp, scope_name);
-            }else{
-                type_tmp = check_expression_for_call(tmp,scope_name);
-            }
+            type_tmp = check_expression_for_call(tmp,scope_name);
             // FALTA AQUI UM CICLO FOR PARA PERCORRER TODAS AS VARIAVEIS E VERIFICAR OS TIPOS
             if(scope->variables->type == type_tmp){
 
@@ -108,30 +104,34 @@ void check_function_invocation(Structure* node ,char* scope_name){
                 //De acordo com exemplos é assim mas nao faz sentido?
                 sprintf(tmp->error,"Line %d, column %d: Cannot find symbol %s",tmp->token->l,tmp->token->col,tmp->token->val);
             }
-            if(tmp != NULL) tmp = tmp->brother;
+            if(tmp == NULL) break;
+            tmp = tmp->brother;
         }
     }
     else{
         sprintf(tmp->error,"Line %d, column %d: Cannot find symbol %s",tmp->token->l,tmp->token->col,tmp->token->val);
     }
+    check_second_run(node->brother, scope_name);
 }
 
-void check_parseArgs(Structure* node ,char* scope_name){
+basic_type check_parseArgs(Structure* node ,char* scope_name){
     
     Table_element* id =  search_variable(scope_name, node->token->val);
     if(id != NULL){  //variable exists
         basic_type temp = check_expression(node->brother,scope_name);
         //Int  -> Atoi (args[int])
         if(id->type == integer && temp == integer){
-
+            return integer;
         } //Assign Types are correct
         //[NEEDS DOING] --> Meter boolean a true de ser usado  
         else{
             sprintf(node->error,"Line %d, column %d: Operator %s cannot be applied to types %s, %s",node->token->l,node->token->col,node->token->val,type_to_string(id->type),type_to_string(temp));
+            return undef;
         }
     }
     else{  //variable doesn´t exist locally or globally
         sprintf(node->error,"Line %d, column %d: Cannot find symbol %s",node->token->l,node->token->col,node->token->val);
+        return undef;
     }
 }
 
@@ -192,16 +192,16 @@ void check_assign(Structure* node, char* scope_name){
     return;
 }
 
-void type_to_node(Structure* node, basic_type type){
+basic_type type_to_node(Structure* node, basic_type type){
     char boolean_options[9][4] ={"Or","And","Lt","Gt","Le","Ge","Eq","Ne","Not"};
     for(int i=0;i<9;i++){
         if(strcmp(node->token->val,boolean_options[i])==0){
             node->value_type = boolean;
-            return;
+            return boolean;
         }
     }
     node->value_type = type;
-    return;
+    return type;
 }
 
 void type_error(Structure* node,basic_type t1){
@@ -233,6 +233,7 @@ basic_type check_expression(Structure* node, char* scope_name){
             if(node->brother->type == Block){
                 final_type = child_type;
             }else{
+                final_type = undef;
                 // Parte de errovem para aqui
             }
         }else{
@@ -290,7 +291,7 @@ basic_type check_expression(Structure* node, char* scope_name){
         }
     }
      //if(final_type == undef) type_error(node,temp);
-    type_to_node(node,final_type);
+    final_type = type_to_node(node,final_type);
     return final_type;
 }
 
@@ -299,10 +300,11 @@ basic_type check_expression_for_call(Structure *node, char* scope_name){
 
     if(node->type == Call){
         check_function_invocation(node, scope_name);
-        return node->type;
+        return node->value_type;
     }
 
     basic_type final_type;
+    basic_type brother_expression_type;
     Table_element *tmp;
     switch(node->type){
         case intlit:
@@ -322,6 +324,14 @@ basic_type check_expression_for_call(Structure *node, char* scope_name){
                 final_type = undef;
                 sprintf(node->error,"Line %d, column %d: Cannot find symbol %s",node->token->l,node->token->col,tmp->name);
             }
+            break;
+        case Expression:
+            final_type = check_expression_for_call(node->child, scope_name);
+            if(node->child->brother != NULL){
+                brother_expression_type = check_expression_for_call(node->child->brother, scope_name);
+                final_type = brother_expression_type == final_type ? final_type : undef;
+            }
+            final_type = type_to_node(node,final_type);
             break;
         default:
             final_type = none;
