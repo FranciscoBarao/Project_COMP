@@ -268,6 +268,7 @@ void print_annotated_tree(Structure *node, int number_of_points, char* scope, in
             case id :
                 if(inside_expression){
                     variable = search_variable(scope, tmp->token->val);
+                    //printf("Wtf a serio?\n");
                     if(variable->type == function){
                         printf("Id(%s) - (", tmp->token->val);
                         // percorre as variaveis e imprime os tipos delas
@@ -332,7 +333,7 @@ void print_annotated_tree(Structure *node, int number_of_points, char* scope, in
                 expression = 1;
                 break;
             case Statement:
-                if(strcmp(tmp->token->val, "Return") == 0  || strcmp(tmp->token->val, "Print") == 0 || strcmp(tmp->token->val, "If") == 0){
+                if(strcmp(tmp->token->val, "Return") == 0  || strcmp(tmp->token->val, "Print") == 0 || strcmp(tmp->token->val, "If") == 0 || strcmp(tmp->token->val, "For") == 0){
                     expression = 1;
                 }
                 printf("%s\n", tmp->token->val);
@@ -401,7 +402,6 @@ void yyerror (const char *s) {
 }
 
 int main(int argc, char* argv[]){
-    int is_semantic = 0;
     lex_initiate(argc,argv);
     if(argv[1] != NULL && strcmp(argv[1] , "-l")==0) {
         yylex();
