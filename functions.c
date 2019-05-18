@@ -64,6 +64,7 @@ Structure* create_node(char* val, int col, int l, Type_node type, Structure *chi
     node->token = token;
     node->type = type;
     node->value_type = undef;
+    node->is_global = 0;
 
     return node;
 }
@@ -201,15 +202,23 @@ void show_table(){
 }
 
 //Procura um identificador, devolve 0 caso nao exista
-Table_element *search_variable(char* scope_name, char *str){
+Special_element *search_variable(char* scope_name, char *str){
+    Special_element *special = (Special_element*) malloc(sizeof(Special_element));
     Scope_element *scope = get_scope(scope_name);
     if(scope != NULL){
         Table_element *symbol_table = scope->variables;
         Table_element *aux;
 
         for(aux=symbol_table; aux; aux=aux->next){
-            if(strcmp(aux->name, str)==0)
-                return aux;
+            if(strcmp(aux->name, str)==0){
+                special->element = aux;
+                if(strcmp(scope_name, "global") == 0){
+                    special->is_global = 1;
+                }else{
+                    special->is_global = 0;
+                }
+                return special;
+            }
         }
     }
     if(strcmp(scope_name, "global") != 0){

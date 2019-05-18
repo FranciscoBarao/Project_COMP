@@ -267,7 +267,11 @@ void print_annotated_tree(Structure *node, int number_of_points, char* scope, in
         switch(tmp->type) {
             case id :
                 if(inside_expression){
-                    variable = search_variable(scope, tmp->token->val);
+                    if(tmp->is_global == 1){
+                        variable = search_variable("global", tmp->token->val)->element;
+                    }else{
+                        variable = search_variable(scope, tmp->token->val)->element;
+                    }
                     //printf("Wtf a serio?\n");
                     if(variable->type == function){
                         printf("Id(%s) - (", tmp->token->val);
@@ -411,14 +415,21 @@ int main(int argc, char* argv[]){
     if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-t")==0){
         print_tree(myprogram, 0);
     }else if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-s")==0) {
+        int semantic_error = 0;
         add_scope("global", 0, none);
-        check_program(myprogram, "global");
-        check_second_run(myprogram, "global");
+        semantic_error -= check_program(myprogram, "global");
+        semantic_error -= check_second_run(myprogram, "global");
+        if(semantic_error < 0){
+            // show errors? maybe not
+            //free table too
+            free_tree(myprogram);
+            return 0;
+        }
         show_table();
         print_annotated_tree(myprogram, 0, "global", 0);
+        // free table
         return 0;
     }else{
-        free_tree(myprogram);
     }
     return 0;
 }

@@ -2,8 +2,8 @@
 
 basic_type type_to_basic(Type_node type);
 int get_number_variables(Structure *node);
-void check_second_run(Structure *node, char* scope_name );
-void check_program(Structure *node, char* scope_name );
+int check_second_run(Structure *node, char* scope_name );
+int check_program(Structure *node, char* scope_name );
 void check_function_invocation(Structure* node ,char* scope_name);
 basic_type check_parseArgs(Structure* node ,char* scope_name);
 void check_statement(Structure* node ,char* scope_name);
