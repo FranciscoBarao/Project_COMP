@@ -182,14 +182,15 @@ void check_statement(Structure* node ,char* scope_name){
 }
 
 void check_variable_use(Structure* node,char* scope_name){
-    Table_element* n = search_variable(scope_name,node->token->val);
-    if(n != NULL && !n->is_used) sprintf(node->error,"Line %d, column %d: Symbol %s declared  but  never  used",node->token->l,node->token->col,node->token->val);   
+    Table_element* n = search_variable(scope_name,node->token->val)->element;
+    if(n != NULL && !n->is_used) printf("Line %d, column %d: Symbol %s declared  but  never  used",node->token->l,node->token->col,node->token->val);   
 }
-void octal(Structure*node, char octal[]){
+
+void octal(Structure*node, char* octal){
     int i;
-    if(atoi(octal[0]) == 0 && !strcmp(octal[1],"x")==0 && !strcmp(octal[1],"X")==0){
+    if(atoi(&octal[0]) == 0 && octal[1] != 'x' && octal[1] != 'X'){
         for(i=1;i < sizeof(octal)/sizeof(char); i++){
-            if(atoi(octal[i]) >= 8) sprintf(node->error,"Line %d, column %d: Invalid  octal  constant: %s",node->token->l,node->token->col,node->token->val);   
+            if(atoi(&octal[i]) >= 8) printf("Line %d, column %d: Invalid  octal  constant: %s",node->token->l,node->token->col,node->token->val);   
         }
     }
 }
