@@ -67,7 +67,6 @@ int check_program(Structure *node, char* scope_name ){ //First run of tree
     Structure* tmp = node;
     Special_element *special;
     int is_error = 0;
-
     switch(tmp->type) {
         case VarDecl:
             is_error += check_variable(tmp->child->brother, scope_name, tmp->child->brother->token->val, val_to_basic(tmp->child->token->val));
@@ -103,6 +102,7 @@ int check_function_invocation(Structure* node ,char* scope_name){
     Structure *tmp = node;
     Table_element *variable;
     int number_of_variables = 0;
+    int value_to_return = 0;
     tmp->value_type = get_scope(tmp->child->token->val)->type;
     tmp = tmp->child;
     // tmp is now id of call 
@@ -122,7 +122,7 @@ int check_function_invocation(Structure* node ,char* scope_name){
                 //VER ISTO.. WTF?!
                 //De acordo com exemplos é assim mas nao faz sentido?
                 asprintf(&tmp->error, "Line %d, column %d: Cannot find symbol %s\n",tmp->token->l,tmp->token->col,tmp->token->val);
-                return -1;
+                value_to_return += -1;
             }
             number_of_variables += 1;
             tmp = tmp->brother;
@@ -130,13 +130,15 @@ int check_function_invocation(Structure* node ,char* scope_name){
         }
         if(number_of_variables != scope->number_of_params){
             asprintf(&node->child->error, "Line %d, column %d: Cannot find symbol %s()\n", node->child->token->l,node->child->token->col,node->child->token->val);
+            value_to_return += -1;
         }
     }
     else{
         asprintf(&tmp->error, "Line %d, column %d: Cannot find symbol %s()\n",tmp->token->l,tmp->token->col,tmp->token->val);
-        return -1;
+        value_to_return += -1;
     }
-    return check_second_run(node->brother, scope_name);
+    value_to_return += check_second_run(node->brother, scope_name);
+    return value_to_return; 
 }
 
 basic_type check_parseArgs(Structure* node ,char* scope_name){
@@ -167,17 +169,18 @@ basic_type check_parseArgs(Structure* node ,char* scope_name){
 }
 
 int check_statement(Structure* node ,char* scope_name){
+    int value_to_return = 0;
     if(strcmp(node->token->val, "If")==0 || strcmp(node->token->val, "For")==0) {
         basic_type tmp = check_expression(node->child,scope_name);
         if (tmp != boolean){
             asprintf(&node->error, "Line %d, column %d: Incompatible type %s in %s statement\n",node->child->token->l,node->child->token->col,type_to_string(tmp),expression_to_string(node));
-            return -1;
+            value_to_return -1;
         }
     }
     else if(strcmp(node->token->val, "Return") == 0){
         if(node->child ==  NULL){ // no expression and return is none
-        //LOOK AT HERE!!
-            return 0;
+            //LOOK AT HERE!!
+            value_to_return = 0;
         }
         else{
             basic_type tmp = check_expression(node->child,scope_name);
@@ -185,7 +188,7 @@ int check_statement(Structure* node ,char* scope_name){
             if(tmp == scope->type);
             else{
                 asprintf(&node->error, "Line %d, column %d: Incompatible type %s in %s statement",node->token->l,node->token->col,type_to_string(tmp),node->token->val); 
-                return -1;
+                value_to_return -1;
             }
         }
     }
@@ -193,7 +196,8 @@ int check_statement(Structure* node ,char* scope_name){
         check_second_run(node->child, scope_name);
     }
     // Needs this to check code after block
-    return check_second_run(node->child->brother, scope_name);
+    if(node->child != NULL) value_to_return += check_second_run(node->child->brother, scope_name);
+    return value_to_return;
 }
 
 int check_variable_use(Structure* node,char* scope_name){
