@@ -4,6 +4,10 @@ hex_digit       ("0x"|"0X")[0-9a-fA-F]+
 exponent        ("e"|"E")("+"|"-")?{decimal_digit}
 letter          [a-zA-Z_]+
 %{
+    /*
+        Pedro Ribeiro, 2016218753
+        Francisco Barão, 2016238992
+    */
     #include "functions.h"
     #include "y.tab.h"
     #define yygetc() getc(yyin)
