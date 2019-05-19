@@ -79,6 +79,8 @@ int check_program(Structure *node, char* scope_name ){ //First run of tree
             break;
         case ParamDecl:
             is_error += check_variable(tmp->child->brother, scope_name, tmp->child->brother->token->val, val_to_basic(tmp->child->token->val));
+            Table_element *aux = search_variable(scope_name, tmp->child->brother->token->val)->element;
+            aux->is_used = 1;
             is_error += check_program(tmp->brother, scope_name);
             break;
         case id:
@@ -116,14 +118,12 @@ int check_function_invocation(Structure* node ,char* scope_name){
     Call_types *linked_tmp = linked;
     int number_of_variables = 0;
     int value_to_return = 0;
-    tmp->value_type = get_scope(tmp->child->token->val)->type;
-    tmp = tmp->child;
-    // tmp is now id of call 
-    Scope_element* scope = get_scope(tmp->token->val); // Bem?
-    // tmp now is going to be the params of the call
-    tmp = tmp->brother;
-    variable = scope->variables;
+    Scope_element* scope = get_scope(tmp->child->token->val);
     if(scope != NULL){
+        // tmp now is going to be the params of the call
+        tmp->value_type = scope->type;
+        tmp = tmp->child->brother;
+        variable = scope->variables;
         for(int i=0;i<scope->number_of_params; i++){
             if(tmp == NULL) break;
             Call_types *aux = malloc(sizeof(Call_types));
@@ -155,13 +155,32 @@ int check_function_invocation(Structure* node ,char* scope_name){
                 linked = linked->next;
             }
             error_string = concat(error_string, ")\n");
-            node->error = malloc(sizeof(char) * 100);
+            node->error = malloc(sizeof(char) * 300);
             strcpy(node->error, error_string);
             value_to_return += -1;
         }
     }
     else{
-        asprintf(&tmp->error, "Line %d, column %d: Cannot find symbol %s()\n",tmp->token->l,tmp->token->col,tmp->token->val);
+        tmp = tmp->child->brother;
+        if(tmp != NULL){
+            asprintf(&error_string, "Line %d, column %d: Cannot find symbol %s(",node->child->token->l,node->child->token->col,node->child->token->val);
+            while(tmp != NULL){
+                basic_type var_type = check_expression_for_call(tmp, scope_name);
+                if(tmp->brother == NULL){
+                    asprintf(&error_string2,"%s", type_to_string(var_type));
+                }else{
+                    asprintf(&error_string2,"%s,", type_to_string(var_type));
+                }
+                error_string = concat(error_string, error_string2);
+                free(error_string2);
+                tmp = tmp->brother;
+            }
+            error_string = concat(error_string, ")\n");
+            node->error = malloc(sizeof(char) * 300);
+            strcpy(node->error, error_string);
+        }else{
+            asprintf(&node->error, "Line %d, column %d: Cannot find symbol %s()\n",node->child->token->l,node->child->token->col,node->child->token->val);
+        }
         value_to_return += -1;
     }
     value_to_return += check_second_run(node->brother, scope_name);
