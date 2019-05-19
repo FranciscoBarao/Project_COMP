@@ -33,8 +33,7 @@ int check_second_run(Structure *node, char* scope_name ){ //Second run of tree
             is_error += check_second_run(tmp->brother, tmp->child->token->val);
             break;
         case VarDecl:
-            //Function to check Variable "used_boolean".. if false -> error -> declared but not used
-            //check_variable(tmp, scope_name, tmp->child->brother->token->val, val_to_basic(tmp->child->token->val));
+            check_variable_for_used(tmp, scope_name);
             is_error += check_second_run(tmp->brother, scope_name);
             break;
         case Assign:
@@ -87,6 +86,7 @@ int check_program(Structure *node, char* scope_name ){ //First run of tree
             is_error += check_program(tmp->child, scope_name);
             is_error += check_program(tmp->brother, scope_name); 
             if(special == NULL) break;
+            special->element->is_used = 1;
             tmp->is_global = special->is_global;
             break;
         default :
@@ -178,6 +178,7 @@ basic_type check_parseArgs(Structure* node ,char* scope_name){
     }
     if(aux != NULL){  //variable exists
         id = aux->element;
+        id->is_used = 1;
         basic_type temp = check_expression(node->brother,scope_name);
         //Int  -> Atoi (args[int])
         if(id->type == integer && temp == integer){
@@ -236,17 +237,17 @@ int check_variable_use(Structure* node,char* scope_name){
     return 0;
 }
 
-int octal(Structure*node, char* octal){
+void octal(Structure* node, char* octal){
     int i;
-    if(atoi(&octal[0]) == 0 && octal[1] != 'x' && octal[1] != 'X'){
+    if(octal[0] == '0' && octal[1] != 'x' && octal[1] != 'X'){
         for(i=1;i < sizeof(octal)/sizeof(char); i++){
             if(atoi(&octal[i]) >= 8){
-                asprintf(&node->error, "Line %d, column %d: Invalid  octal  constant: %s",node->token->l,node->token->col,node->token->val);   
-                return -1;
+                asprintf(&node->error, "Line %d, column %d: Invalid octal constant: %s\n",node->token->l,node->token->col,node->token->val);   
+                return;
             }
         }
     }
-    return 0;
+    return;
 }
 
 int check_variable(Structure* node ,char* scope_name, char *str, basic_type t){
@@ -258,6 +259,17 @@ int check_variable(Structure* node ,char* scope_name, char *str, basic_type t){
         return -1;
     }
     return 0;
+}
+
+int check_variable_for_used(Structure* node, char* scope_name){
+    Structure *aux = node->child->brother;
+    Table_element *variable = search_variable(scope_name, aux->token->val)->element;
+    if(variable->is_used == 0){
+        asprintf(&node->error, "Line %d, column %d: Symbol %s declared but never used\n",aux->token->l,aux->token->col,aux->token->val);
+        return -1;
+    }else{
+        return 0;
+    }
 }
 
 int check_assign(Structure* node, char* scope_name){
@@ -273,6 +285,7 @@ int check_assign(Structure* node, char* scope_name){
     }
     if(special != NULL){  //variable exists
         id = special->element;
+        id->is_used = 1;
         tmp = check_expression(aux->brother,scope_name);
         node->value_type = tmp;
         if(id->type == tmp){
@@ -371,6 +384,7 @@ basic_type check_expression(Structure* node, char* scope_name){
         }else{
             switch(node->type){
                 case intlit:
+                    octal(node, node->token->val);
                     final_type = integer;
                     break;
                 case reallit:
@@ -387,6 +401,7 @@ basic_type check_expression(Structure* node, char* scope_name){
                     }
                     if (aux != NULL) {  //Existe
                         tmp = aux->element;
+                        tmp->is_used = 1;
                         final_type = tmp->type;
                     }else{
                         final_type = undef;
@@ -418,6 +433,7 @@ basic_type check_expression_for_call(Structure *node, char* scope_name){
     Table_element *tmp;
     switch(node->type){
         case intlit:
+            octal(node, node->token->val);
             final_type = integer;
             break;
         case reallit:
@@ -434,6 +450,7 @@ basic_type check_expression_for_call(Structure *node, char* scope_name){
             }
             if (aux != NULL) {  //Existe
                 tmp = aux->element;
+                tmp->is_used = 1;
                 final_type = tmp->type;
             }else{
                 final_type = undef;

@@ -161,6 +161,7 @@ Table_element *insert_variable(char* scope_name, char *str, basic_type t){
         strcpy(new_symbol->name, str);
         new_symbol->type=t;
         new_symbol->next=NULL;
+        new_symbol->is_used=0;
         if(symbol_table){	
             //Procura cauda da lista e verifica se simbolo ja existe
             for(aux=symbol_table; aux; previous=aux, aux=aux->next)
