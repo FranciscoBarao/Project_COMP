@@ -5,6 +5,40 @@
 
 extern Scope_element* scope_table;
 
+const char* expression_to_string(Structure *node){
+    if(strcmp(node->token->val, "Assign") == 0){
+        return "=";
+    }else if(strcmp(node->token->val, "Or") == 0){
+        return "||";
+    }else if(strcmp(node->token->val, "And") == 0){
+        return "&&";
+    }else if(strcmp(node->token->val, "Lt") == 0){
+        return "<";
+    }else if(strcmp(node->token->val, "Gt") == 0){
+        return ">";
+    }else if(strcmp(node->token->val, "Le") == 0){
+        return "<=";
+    }else if(strcmp(node->token->val, "Ge") == 0){
+        return ">=";
+    }else if(strcmp(node->token->val, "Eq") == 0){
+        return "==";
+    }else if(strcmp(node->token->val, "Ne") == 0){
+        return "!=";
+    }else if(strcmp(node->token->val, "Add") == 0){
+        return "+";
+    }else if(strcmp(node->token->val, "Sub") == 0){
+        return "-";
+    }else if(strcmp(node->token->val, "Mul") == 0){
+        return "*";
+    }else if(strcmp(node->token->val, "Div") == 0){
+        return "/";
+    }else if(strcmp(node->token->val, "Not") == 0){
+        return "!";
+    }else{
+        return node->token->val;
+    }
+}
+
 const char* type_to_string(basic_type t){
     switch(t) {
         case integer:

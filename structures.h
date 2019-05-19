@@ -31,6 +31,7 @@ typedef struct _s2{
 }Token;
 
 typedef struct _s1{
+  char *error;
   Token *token;
   Type_node type;
   basic_type value_type;

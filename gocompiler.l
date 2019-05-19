@@ -44,7 +44,7 @@ letter          [a-zA-Z_]+
     void identifier_to_token(){
         yylval.value.val = (char*)strdup(yytext); 
         yylval.value.l = l; 
-        yylval.value.col = column;
+        yylval.value.col = column-yyleng;
     }
 %}
 
@@ -107,19 +107,19 @@ letter          [a-zA-Z_]+
 "_"             {if(tokens) printf("BLANKID\n"); col(); semicollon(0); if(!tokens) return BLANKID;}
 "+"             {if(tokens) printf("PLUS\n"); col(); semicollon(0); if(!tokens) return PLUS;}
 "-"             {if(tokens) printf("MINUS\n"); col(); semicollon(0); if(!tokens) return MINUS;}
-"*"             {if(tokens) printf("STAR\n"); col(); semicollon(0); if(!tokens) return STAR;}
-"/"             {if(tokens) printf("DIV\n"); col(); semicollon(0); if(!tokens) return DIV;}
-"%"             {if(tokens) printf("MOD\n"); col(); semicollon(0); if(!tokens) return MOD;}
-"&&"            {if(tokens) printf("AND\n"); col(); semicollon(0); if(!tokens) return AND;}
-"||"            {if(tokens) printf("OR\n"); col(); semicollon(0); if(!tokens) return OR;}
-"<"             {if(tokens) printf("LT\n"); col(); semicollon(0); if(!tokens) return LT;}
-"<="            {if(tokens) printf("LE\n"); col(); semicollon(0); if(!tokens) return LE;}
-">"             {if(tokens) printf("GT\n"); col(); semicollon(0); if(!tokens) return GT;}
-">="            {if(tokens) printf("GE\n"); col(); semicollon(0); if(!tokens) return GE;}
-"="             {if(tokens) printf("ASSIGN\n"); col(); semicollon(0); if(!tokens) return ASSIGN;}
-"=="            {if(tokens) printf("EQ\n"); col(); semicollon(0); if(!tokens) return EQ;}
-"!="            {if(tokens) printf("NE\n"); col(); semicollon(0); if(!tokens) return NE;}
-"!"             {if(tokens) printf("NOT\n"); col(); semicollon(0); if(!tokens) return NOT;}
+"*"             {if(tokens) printf("STAR\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return STAR;}
+"/"             {if(tokens) printf("DIV\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return DIV;}
+"%"             {if(tokens) printf("MOD\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return MOD;}
+"&&"            {if(tokens) printf("AND\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return AND;}
+"||"            {if(tokens) printf("OR\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return OR;}
+"<"             {if(tokens) printf("LT\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return LT;}
+"<="            {if(tokens) printf("LE\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return LE;}
+">"             {if(tokens) printf("GT\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return GT;}
+">="            {if(tokens) printf("GE\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return GE;}
+"="             {if(tokens) printf("ASSIGN\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return ASSIGN;}
+"=="            {if(tokens) printf("EQ\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return EQ;}
+"!="            {if(tokens) printf("NE\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return NE;}
+"!"             {if(tokens) printf("NOT\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return NOT;}
 ","             {if(tokens) printf("COMMA\n"); col(); semicollon(0); if(!tokens) return COMMA;}
 "{"             {if(tokens) printf("LBRACE\n"); col(); semicollon(0); if(!tokens) return LBRACE;}
 "}"             {if(tokens) printf("RBRACE\n"); col(); semicollon(1); if(!tokens) return RBRACE;}
