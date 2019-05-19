@@ -174,7 +174,7 @@ int check_statement(Structure* node ,char* scope_name){
         basic_type tmp = check_expression(node->child,scope_name);
         if (tmp != boolean){
             asprintf(&node->error, "Line %d, column %d: Incompatible type %s in %s statement\n",node->child->token->l,node->child->token->col,type_to_string(tmp),expression_to_string(node));
-            value_to_return -1;
+            value_to_return += -1;
         }
     }
     else if(strcmp(node->token->val, "Return") == 0){
@@ -188,7 +188,7 @@ int check_statement(Structure* node ,char* scope_name){
             if(tmp == scope->type);
             else{
                 asprintf(&node->error, "Line %d, column %d: Incompatible type %s in %s statement",node->token->l,node->token->col,type_to_string(tmp),node->token->val); 
-                value_to_return -1;
+                value_to_return += -1;
             }
         }
     }
