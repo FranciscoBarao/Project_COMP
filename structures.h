@@ -61,4 +61,9 @@ typedef struct _t3
   int is_global;
 } Special_element;
 
+typedef struct _s10{
+  basic_type type;
+  struct _s10 *next;
+} Call_types;
+
 #endif

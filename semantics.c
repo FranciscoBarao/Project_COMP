@@ -97,10 +97,23 @@ int check_program(Structure *node, char* scope_name ){ //First run of tree
     return is_error;
 }
 
+char* concat(const char *s1, const char *s2){
+    char *result = malloc(strlen(s1) + strlen(s2) + 1); // +1 for the null-terminator
+    // in real code you would check for errors in malloc here
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
+}
+
 int check_function_invocation(Structure* node ,char* scope_name){
     basic_type type_tmp;
     Structure *tmp = node;
     Table_element *variable;
+    char *error_string;
+    char *error_string2;
+    Call_types *linked = malloc(sizeof(Call_types));
+    linked->next = NULL;
+    Call_types *linked_tmp = linked;
     int number_of_variables = 0;
     int value_to_return = 0;
     tmp->value_type = get_scope(tmp->child->token->val)->type;
@@ -113,24 +126,40 @@ int check_function_invocation(Structure* node ,char* scope_name){
     if(scope != NULL){
         for(int i=0;i<scope->number_of_params; i++){
             if(tmp == NULL) break;
+            Call_types *aux = malloc(sizeof(Call_types));
             type_tmp = check_expression_for_call(tmp,scope_name);
             // FALTA AQUI UM CICLO FOR PARA PERCORRER TODAS AS VARIAVEIS E VERIFICAR OS TIPOS
             if(variable->type == type_tmp){
-
-            } // Parameter type esta de acordo com a expressao na invocacao
-            else{
-                //VER ISTO.. WTF?!
-                //De acordo com exemplos é assim mas nao faz sentido?
-                asprintf(&tmp->error, "Line %d, column %d: Cannot find symbol %s\n",tmp->token->l,tmp->token->col,tmp->token->val);
+                aux->type = type_tmp;
+            }else{
+                aux->type = type_tmp;
                 value_to_return += -1;
             }
             number_of_variables += 1;
             tmp = tmp->brother;
             variable = variable->next;
+            linked_tmp -> next = aux;
+            linked_tmp = linked_tmp->next;
         }
         if(number_of_variables != scope->number_of_params){
             asprintf(&node->child->error, "Line %d, column %d: Cannot find symbol %s()\n", node->child->token->l,node->child->token->col,node->child->token->val);
             value_to_return += -1;
+        }else if(value_to_return < 0){
+            linked = linked->next;
+            asprintf(&error_string, "Line %d, column %d: Cannot find symbol %s(",node->child->token->l,node->child->token->col,node->child->token->val);
+            for(int j=0; j<number_of_variables; j++){
+                if(j == number_of_variables-1){
+                    asprintf(&error_string2,"%s", type_to_string(linked->type));
+                }else{
+                    asprintf(&error_string2,"%s,", type_to_string(linked->type));
+                }
+                error_string = concat(error_string, error_string2);
+                free(error_string2);
+                linked = linked->next;
+            }
+            error_string = concat(error_string, ")\n");
+            node->error = malloc(sizeof(char) * 100);
+            strcpy(node->error, error_string);
         }
     }
     else{
