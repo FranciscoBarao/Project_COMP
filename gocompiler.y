@@ -28,7 +28,9 @@
 %token<value> ASSIGN
 %token<node> COMMA LBRACE RBRACE LPAR RPAR LSQ RSQ
 //Keyword
-%token <node>PACKAGE RETURN ELSE IF FOR VAR PRINT FUNC PARSEINT CMDARGS RESERVED
+%token<node>PACKAGE RETURN ELSE IF FOR VAR PRINT FUNC 
+%token<value>PARSEINT 
+%token<node>CMDARGS RESERVED
 %token flag
 
 %type<node>program
@@ -211,7 +213,7 @@ strlit_state:
     ;
 
 parse_arguments:
-        id_state COMMA BLANKID ASSIGN PARSEINT LPAR CMDARGS LSQ expression RSQ RPAR     {$$=create_node("ParseArgs",0,0,ParseArgs, $1); add_brother($1, $9);}
+        id_state COMMA BLANKID ASSIGN PARSEINT LPAR CMDARGS LSQ expression RSQ RPAR     {$$=create_node("ParseArgs",$5.col,$5.l,ParseArgs, $1); add_brother($1, $9);}
     |   id_state COMMA BLANKID ASSIGN PARSEINT LPAR error RPAR                          {$$=(Structure*)NULL; is_error=1;}
     ;
 function_invocation:

@@ -45,7 +45,7 @@ int check_second_run(Structure *node, char* scope_name ){ //Second run of tree
             is_error += check_second_run(tmp->brother, scope_name);  
             break;
         case ParseArgs:
-            node->value_type = check_parseArgs(tmp->child, scope_name);
+            node->value_type = check_parseArgs(tmp, scope_name);
             is_error += check_second_run(tmp->brother, scope_name);  
             break;
         case Call: //Function Invocation 
@@ -172,14 +172,14 @@ basic_type check_parseArgs(Structure* node ,char* scope_name){
     Table_element* id;
     Special_element *aux;
     if(node->is_global == 1){
-        aux = search_variable("global", node->token->val);
+        aux = search_variable("global", node->child->token->val);
     }else{
-        aux = search_variable(scope_name, node->token->val);
+        aux = search_variable(scope_name, node->child->token->val);
     }
     if(aux != NULL){  //variable exists
         id = aux->element;
         id->is_used = 1;
-        basic_type temp = check_expression(node->brother,scope_name);
+        basic_type temp = check_expression(node->child->brother,scope_name);
         //Int  -> Atoi (args[int])
         if(id->type == integer && temp == integer){
             return integer;
@@ -257,6 +257,10 @@ int check_variable(Structure* node ,char* scope_name, char *str, basic_type t){
     if(new == NULL){
         asprintf(&node->error, "Line %d, column %d: Symbol %s already defined\n",node->token->l,node->token->col,node->token->val);
         return -1;
+    }else{
+        if(strcmp(scope_name, "global") == 0){
+            new->is_used = 1;
+        }
     }
     return 0;
 }
@@ -288,7 +292,7 @@ int check_assign(Structure* node, char* scope_name){
         id->is_used = 1;
         tmp = check_expression(aux->brother,scope_name);
         node->value_type = tmp;
-        if(id->type == tmp){
+        if(id->type == tmp || (id->type == integer && tmp == string)){
             //Assign Types are correct
             //[NEEDS DOING] -> meter used_boolean = true;
         }
@@ -330,7 +334,13 @@ int check_error_expression(Structure *node, basic_type child_type, basic_type br
             return 0;
         }
     }else if(strcmp(node->token->val, "Add") == 0 || strcmp(node->token->val, "Sub") == 0 || strcmp(node->token->val, "Mul") == 0 || strcmp(node->token->val, "Div") == 0 || strcmp(node->token->val, "Mod") == 0){
-        if((child_type == integer && brother_type == integer) || (child_type == float32 && brother_type == float32)){
+        if((child_type == integer && brother_type == integer) || (child_type == float32 && brother_type == float32) || (child_type == string && brother_type == string)){
+            return 0;
+        }else{
+            return -1;
+        }
+    }else if(strcmp(node->token->val, "Eq") == 0 || strcmp(node->token->val, "Ne") == 0){
+        if(child_type == brother_type){
             return 0;
         }else{
             return -1;

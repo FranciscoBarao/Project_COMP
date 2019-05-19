@@ -38,6 +38,8 @@ const char* expression_to_string(Structure *node){
         return "if";
     }else if(strcmp(node->token->val, "For") == 0){
         return "for";
+    }else if(strcmp(node->token->val, "ParseArgs") == 0){
+        return "strconv.Atoi";
     }else{
         return node->token->val;
     }
