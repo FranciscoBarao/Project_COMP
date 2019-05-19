@@ -141,10 +141,7 @@ int check_function_invocation(Structure* node ,char* scope_name){
             linked_tmp -> next = aux;
             linked_tmp = linked_tmp->next;
         }
-        if(number_of_variables != scope->number_of_params){
-            asprintf(&node->child->error, "Line %d, column %d: Cannot find symbol %s()\n", node->child->token->l,node->child->token->col,node->child->token->val);
-            value_to_return += -1;
-        }else if(value_to_return < 0){
+        if(number_of_variables != scope->number_of_params || value_to_return < 0){
             linked = linked->next;
             asprintf(&error_string, "Line %d, column %d: Cannot find symbol %s(",node->child->token->l,node->child->token->col,node->child->token->val);
             for(int j=0; j<number_of_variables; j++){
@@ -160,6 +157,7 @@ int check_function_invocation(Structure* node ,char* scope_name){
             error_string = concat(error_string, ")\n");
             node->error = malloc(sizeof(char) * 100);
             strcpy(node->error, error_string);
+            value_to_return += -1;
         }
     }
     else{
