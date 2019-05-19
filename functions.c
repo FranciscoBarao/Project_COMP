@@ -34,6 +34,10 @@ const char* expression_to_string(Structure *node){
         return "/";
     }else if(strcmp(node->token->val, "Not") == 0){
         return "!";
+    }else if(strcmp(node->token->val, "If") == 0){
+        return "if";
+    }else if(strcmp(node->token->val, "For") == 0){
+        return "for";
     }else{
         return node->token->val;
     }

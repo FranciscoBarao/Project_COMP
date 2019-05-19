@@ -105,8 +105,8 @@ letter          [a-zA-Z_]+
  /*Operators* & punctuation*/
 ";"             {if(tokens) printf("SEMICOLON\n"); col();semicollon(0); if(!tokens) return SEMICOLON;}
 "_"             {if(tokens) printf("BLANKID\n"); col(); semicollon(0); if(!tokens) return BLANKID;}
-"+"             {if(tokens) printf("PLUS\n"); col(); semicollon(0); if(!tokens) return PLUS;}
-"-"             {if(tokens) printf("MINUS\n"); col(); semicollon(0); if(!tokens) return MINUS;}
+"+"             {if(tokens) printf("PLUS\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return PLUS;}
+"-"             {if(tokens) printf("MINUS\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return MINUS;}
 "*"             {if(tokens) printf("STAR\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return STAR;}
 "/"             {if(tokens) printf("DIV\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return DIV;}
 "%"             {if(tokens) printf("MOD\n"); col(); semicollon(0); if(!tokens){identifier_to_token();} return MOD;}

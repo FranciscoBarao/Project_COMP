@@ -259,6 +259,7 @@ void print_error_tree(Structure *node){
     if(node != NULL){
         if(node->error != NULL){
             printf("%s", node->error);
+            free(node->error);
         }
         print_error_tree(node->child);
         print_error_tree(node->brother);

@@ -170,7 +170,7 @@ int check_statement(Structure* node ,char* scope_name){
     if(strcmp(node->token->val, "If")==0 || strcmp(node->token->val, "For")==0) {
         basic_type tmp = check_expression(node->child,scope_name);
         if (tmp != boolean){
-            asprintf(&node->error, "Line %d, column %d: Incompatible type %s in %s statement\n",node->token->l,node->token->col,type_to_string(tmp),node->token->val);
+            asprintf(&node->error, "Line %d, column %d: Incompatible type %s in %s statement\n",node->child->token->l,node->child->token->col,type_to_string(tmp),expression_to_string(node));
             return -1;
         }
     }
@@ -272,10 +272,32 @@ basic_type type_to_node(Structure* node, basic_type type){
     return type;
 }
 
-void type_error(Structure* node,basic_type t1){
-    if(strcmp(node->token->val,"Not") == 0)   asprintf(&node->error, "Line %d, column %d: Operator %s cannot be applied to type %s\n",node->token->l,node->token->col,expression_to_string(node),type_to_string(node->value_type));
-    else    asprintf(&node->error, "Line %d, column %d: Operator %s cannot be applied to types %s, %s\n",node->token->l,node->token->col,expression_to_string(node),type_to_string(node->value_type),type_to_string(t1));
+void type_error(Structure* node, basic_type t1, basic_type t2){
+    if(strcmp(node->token->val,"Not") == 0 || strcmp(node->token->val,"Minus") == 0 || strcmp(node->token->val,"Plus") == 0)   asprintf(&node->error, "Line %d, column %d: Operator %s cannot be applied to type %s\n",node->token->l,node->token->col,expression_to_string(node),type_to_string(t1));
+    else    asprintf(&node->error, "Line %d, column %d: Operator %s cannot be applied to types %s, %s\n",node->token->l,node->token->col,expression_to_string(node),type_to_string(t1),type_to_string(t2));
     return;
+}
+
+int check_error_expression(Structure *node, basic_type child_type, basic_type brother_type){
+    if(strcmp(node->token->val, "Or") == 0 || strcmp(node->token->val, "And") == 0){
+        if(child_type != boolean && brother_type != boolean){
+            return -1;
+        }else{
+            return 0;
+        }
+    }else if(strcmp(node->token->val, "Add") == 0 || strcmp(node->token->val, "Sub") == 0 || strcmp(node->token->val, "Mul") == 0 || strcmp(node->token->val, "Div") == 0 || strcmp(node->token->val, "Mod") == 0){
+        if((child_type == integer && brother_type == integer) || (child_type == float32 && brother_type == float32)){
+            return 0;
+        }else{
+            return -1;
+        }
+    }else{
+        if((child_type == integer || child_type == float32) && (brother_type == integer || brother_type == float32)){
+            return 0;
+        }else{
+            return -1;
+        }
+    }
 }
 
 basic_type check_expression(Structure* node, char* scope_name){
@@ -289,87 +311,64 @@ basic_type check_expression(Structure* node, char* scope_name){
     }else if(node->type == Call){
         check_function_invocation(node, scope_name);
         return node->value_type;
-    }
-    if(node->child != NULL){
-        child_type = check_expression(node->child, scope_name);
-    } 
-    if(node->brother != NULL && node->brother->type != Block) {
-        brother_type = check_expression(node->brother, scope_name);
-    }
-
-    if(node->brother != NULL && node->child != NULL && node->brother->type != Block){
-        if(child_type != brother_type){
-            if(node->brother->type == Block){
-                final_type = child_type;
+    }else{
+        if(node->child != NULL && node->child->brother != NULL){
+            child_type = check_expression(node->child, scope_name);
+            brother_type = check_expression(node->child->brother, scope_name);
+            if(check_error_expression(node, child_type, brother_type) == -1){
+                final_type = undef;
+            }else{
+                final_type = child_type; //ou brother type e indiferente
+            }
+        }else if(node->child != NULL){
+            child_type = check_expression(node->child, scope_name);
+            if(strcmp(node->token->val, "Plus") == 0 || strcmp(node->token->val, "Minus") == 0){
+                if(child_type == integer || child_type == float32){
+                    final_type = child_type;
+                }else{
+                    final_type = undef;
+                }
+            }else if(strcmp(node->token->val, "Not") == 0){
+                if(child_type == boolean){
+                    final_type = child_type;
+                }else{
+                    final_type = undef;
+                }
             }else{
                 final_type = undef;
-                // Parte de errovem para aqui
             }
         }else{
-            final_type = child_type; // Tem de ser o child
-        }
-    }else if(node->brother != NULL && node->brother->type != Block){
-        switch(node->type){
-            case intlit:
-                final_type = integer == brother_type ? integer : undef;
-                break;
-            case reallit:
-                final_type = float32 == brother_type ? float32 : undef;
-                break;
-            case strlit:
-                final_type = string == brother_type ? string : undef;
-                break;
-            case id:
-                if(node->is_global == 1){
-                    aux = search_variable("global", node->token->val);
-                }else{
-                    aux = search_variable(scope_name, node->token->val);
-                }
-                if (aux != NULL) {  //Existe
-                    tmp = aux->element;
-                    final_type = tmp->type == brother_type ? brother_type : none;
-                }else{
+            switch(node->type){
+                case intlit:
+                    final_type = integer;
+                    break;
+                case reallit:
+                    final_type = float32;
+                    break;
+                case strlit:
+                    final_type = string;
+                    break;
+                case id:
+                    if(node->is_global == 1){
+                        aux = search_variable("global", node->token->val);
+                    }else{
+                        aux = search_variable(scope_name, node->token->val);
+                    }
+                    if (aux != NULL) {  //Existe
+                        tmp = aux->element;
+                        final_type = tmp->type;
+                    }else{
+                        final_type = undef;
+                        asprintf(&node->error, "Line %d, column %d: Cannot find symbol %s\n",node->token->l,node->token->col,node->token->val);
+                    }
+                    break;
+                default:
                     final_type = undef;
-                    asprintf(&node->error, "Line %d, column %d: Cannot find symbol %s\n",node->token->l,node->token->col,node->token->val);
-                }
-                break;
-            default:
-                final_type = undef;
-                break;
-        }
-    }else if(node->child != NULL){
-        final_type = child_type;
-    }else{
-        switch(node->type){
-            case intlit:
-                final_type = integer;
-                break;
-            case reallit:
-                final_type = float32;
-                break;
-            case strlit:
-                final_type = string;
-                break;
-            case id:
-                if(node->is_global == 1){
-                    aux = search_variable("global", node->token->val);
-                }else{
-                    aux = search_variable(scope_name, node->token->val);
-                }
-                if (aux != NULL) {  //Existe
-                    tmp = aux->element;
-                    final_type = tmp->type;
-                }else{
-                    final_type = undef;
-                    asprintf(&node->error, "Line %d, column %d: Cannot find symbol %s\n",node->token->l,node->token->col,node->token->val);
-                }
-                break;
-            default:
-                final_type = none;
-                break;
+                    break;
+            }
         }
     }
-    if(final_type == undef) type_error(node,brother_type);
+    if(final_type == undef && node->type == Expression ) type_error(node,child_type,brother_type);
     final_type = type_to_node(node,final_type);
     return final_type;
 }
@@ -382,6 +381,7 @@ basic_type check_expression_for_call(Structure *node, char* scope_name){
         return node->value_type;
     }
     Special_element *aux;
+    basic_type child_type;
     basic_type final_type;
     basic_type brother_expression_type;
     Table_element *tmp;
@@ -410,16 +410,37 @@ basic_type check_expression_for_call(Structure *node, char* scope_name){
             }
             break;
         case Expression:
-            final_type = check_expression_for_call(node->child, scope_name);
+            child_type = check_expression_for_call(node->child, scope_name);
             if(node->child->brother != NULL){
                 brother_expression_type = check_expression_for_call(node->child->brother, scope_name);
-                final_type = brother_expression_type == final_type ? final_type : undef;
+                if(check_error_expression(node, child_type, brother_expression_type) == -1){
+                    final_type = undef;
+                }else{
+                    final_type = child_type; //ou brother type e indiferente
+                }
+            }else{
+                if(strcmp(node->token->val, "Plus") == 0 || strcmp(node->token->val, "Minus") == 0){
+                    if(child_type == integer || child_type == float32){
+                        final_type = child_type;
+                    }else{
+                        final_type = undef;
+                    }
+                }else if(strcmp(node->token->val, "Not") == 0){
+                    if(child_type == boolean){
+                        final_type = child_type;
+                    }else{
+                        final_type = undef;
+                    }
+                }else{
+                    final_type = undef;
+                }
             }
-            final_type = type_to_node(node,final_type);
             break;
         default:
             final_type = none;
             break;
     }
+    if(final_type == undef && node->type == Expression ) type_error(node,child_type,brother_expression_type);
+    final_type = type_to_node(node,final_type);
     return final_type;
 }
