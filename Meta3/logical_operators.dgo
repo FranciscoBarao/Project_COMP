@@ -19,10 +19,7 @@ func main () {
     var s string;
     var b bool;
 
-    /* é possivel comparar int com float32 */
-    b = i > f;
-    b = i <= f;
-    b = i == f;
+    b = i != i;
     b = f == f;
 
     b = b && b;
@@ -35,15 +32,9 @@ func main () {
     f = f - f;
 
     i = i%i + i%i * i%i - i%i / i%i;
-    f = f%f + f%f * f%f - f%f / f%f;
 
     f = -f;
     f = +f;
-
-    i = s + s;
-    i = s - s;
-    i = s * s;
-    i = s / s;
 
     fmt.Println(s);
     i,_ = strconv.Atoi(os.Args[1]);

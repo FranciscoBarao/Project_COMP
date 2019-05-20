@@ -21,12 +21,16 @@
 //Variables
 %token<node> INT FLOAT32 STRING BOOL
 //Operators
-%token<node> OR AND LT GT EQ NE LE GE 
+%token<value> OR AND LT GT EQ NE LE GE 
 //Ponctuation
-%token<node> PLUS MINUS STAR DIV MOD NOT
-%token<node> SEMICOLON BLANKID ASSIGN COMMA LBRACE RBRACE LPAR RPAR LSQ RSQ
+%token<value> PLUS MINUS STAR DIV MOD NOT
+%token<node> SEMICOLON BLANKID 
+%token<value> ASSIGN
+%token<node> COMMA LBRACE RBRACE LPAR RPAR LSQ RSQ
 //Keyword
-%token <node>PACKAGE RETURN ELSE IF FOR VAR PRINT FUNC PARSEINT CMDARGS RESERVED
+%token<node>PACKAGE RETURN ELSE IF FOR VAR PRINT FUNC 
+%token<value>PARSEINT 
+%token<node>CMDARGS RESERVED
 %token flag
 
 %type<node>program
@@ -159,7 +163,7 @@ statement:
     ;
 
 assign_statement:
-        id_state ASSIGN expression                             {$$=create_node("Assign",0,0,Assign, $1); add_brother($1, $3);}
+        id_state ASSIGN expression                             {$$=create_node("Assign",$2.col,$2.l,Assign, $1); add_brother($1, $3);}
     ;
 
 braces_statement:
@@ -209,7 +213,7 @@ strlit_state:
     ;
 
 parse_arguments:
-        id_state COMMA BLANKID ASSIGN PARSEINT LPAR CMDARGS LSQ expression RSQ RPAR     {$$=create_node("ParseArgs",0,0,ParseArgs, $1); add_brother($1, $9);}
+        id_state COMMA BLANKID ASSIGN PARSEINT LPAR CMDARGS LSQ expression RSQ RPAR     {$$=create_node("ParseArgs",$5.col,$5.l,ParseArgs, $1); add_brother($1, $9);}
     |   id_state COMMA BLANKID ASSIGN PARSEINT LPAR error RPAR                          {$$=(Structure*)NULL; is_error=1;}
     ;
 function_invocation:
@@ -224,22 +228,22 @@ expression_list:
     ;
 
 expression:
-        expression OR  expression                               {$$=create_node("Or",0,0,Expression, $1); add_brother($1, $3);}
-    |   expression AND expression                               {$$=create_node("And",0,0,Expression, $1); add_brother($1, $3);}
-    |   expression LT expression                                {$$=create_node("Lt",0,0,Expression, $1); add_brother($1, $3);}
-    |   expression GT expression                                {$$=create_node("Gt",0,0,Expression, $1); add_brother($1, $3);}
-    |   expression LE expression                                {$$=create_node("Le",0,0,Expression, $1); add_brother($1, $3);}
-    |   expression GE expression                                {$$=create_node("Ge",0,0,Expression, $1); add_brother($1, $3);}
-    |   expression EQ expression                                {$$=create_node("Eq",0,0,Expression, $1); add_brother($1, $3);}
-    |   expression NE expression                                {$$=create_node("Ne",0,0,Expression, $1); add_brother($1, $3);}
-    |   expression PLUS expression                              {$$=create_node("Add",0,0,Expression, $1); add_brother($1, $3);}
-    |   expression MINUS expression                             {$$=create_node("Sub",0,0,Expression, $1); add_brother($1, $3);}
-    |   expression STAR expression                              {$$=create_node("Mul",0,0,Expression, $1); add_brother($1, $3);}
-    |   expression DIV expression                               {$$=create_node("Div",0,0,Expression, $1); add_brother($1, $3);}
-    |   expression MOD expression                               {$$=create_node("Mod",0,0,Expression, $1); add_brother($1, $3);}
-    |   NOT expression  %prec  flag                             {$$=create_node("Not",0,0,Expression, $2);}
-    |   MINUS expression %prec flag                             {$$=create_node("Minus",0,0,Expression, $2);}
-    |   PLUS expression  %prec flag                             {$$=create_node("Plus",0,0,Expression, $2);}
+        expression OR  expression                               {$$=create_node("Or",$2.col,$2.l,Expression, $1); add_brother($1, $3);}
+    |   expression AND expression                               {$$=create_node("And",$2.col,$2.l,Expression, $1); add_brother($1, $3);}
+    |   expression LT expression                                {$$=create_node("Lt",$2.col,$2.l,Expression, $1); add_brother($1, $3);}
+    |   expression GT expression                                {$$=create_node("Gt",$2.col,$2.l,Expression, $1); add_brother($1, $3);}
+    |   expression LE expression                                {$$=create_node("Le",$2.col,$2.l,Expression, $1); add_brother($1, $3);}
+    |   expression GE expression                                {$$=create_node("Ge",$2.col,$2.l,Expression, $1); add_brother($1, $3);}
+    |   expression EQ expression                                {$$=create_node("Eq",$2.col,$2.l,Expression, $1); add_brother($1, $3);}
+    |   expression NE expression                                {$$=create_node("Ne",$2.col,$2.l,Expression, $1); add_brother($1, $3);}
+    |   expression PLUS expression                              {$$=create_node("Add",$2.col,$2.l,Expression, $1); add_brother($1, $3);}
+    |   expression MINUS expression                             {$$=create_node("Sub",$2.col,$2.l,Expression, $1); add_brother($1, $3);}
+    |   expression STAR expression                              {$$=create_node("Mul",$2.col,$2.l,Expression, $1); add_brother($1, $3);}
+    |   expression DIV expression                               {$$=create_node("Div",$2.col,$2.l,Expression, $1); add_brother($1, $3);}
+    |   expression MOD expression                               {$$=create_node("Mod",$2.col,$2.l,Expression, $1); add_brother($1, $3);}
+    |   NOT expression  %prec  flag                             {$$=create_node("Not",$1.col,$1.l,Expression, $2);}
+    |   MINUS expression %prec flag                             {$$=create_node("Minus",$1.col,$1.l,Expression, $2);}
+    |   PLUS expression  %prec flag                             {$$=create_node("Plus",$1.col,$1.l,Expression, $2);}
     |   INTLIT                                                  {$$=create_node($1.val,$1.col,$1.l,intlit, NULL);}
     |   REALLIT                                                 {$$=create_node($1.val,$1.col,$1.l,reallit, NULL);}
     |   id_state                                                {$$=$1;}
@@ -252,6 +256,19 @@ expression:
 int lex_initiate(int argc, char* argv[]);
 int return_line();
 int return_column();
+
+void print_error_tree(Structure *node){
+    if(node != NULL){
+        if(node->error != NULL){
+            printf("%s", node->error);
+            free(node->error);
+        }
+        print_error_tree(node->child);
+        print_error_tree(node->brother);
+        free(node->token);
+        free(node);
+    }
+}
 
 void print_annotated_tree(Structure *node, int number_of_points, char* scope, int inside_expression){
     Structure* tmp = node;
@@ -267,7 +284,11 @@ void print_annotated_tree(Structure *node, int number_of_points, char* scope, in
         switch(tmp->type) {
             case id :
                 if(inside_expression){
-                    variable = search_variable(scope, tmp->token->val);
+                    if(tmp->is_global == 1){
+                        variable = search_variable("global", tmp->token->val)->element;
+                    }else{
+                        variable = search_variable(scope, tmp->token->val)->element;
+                    }
                     //printf("Wtf a serio?\n");
                     if(variable->type == function){
                         printf("Id(%s) - (", tmp->token->val);
@@ -411,14 +432,21 @@ int main(int argc, char* argv[]){
     if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-t")==0){
         print_tree(myprogram, 0);
     }else if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-s")==0) {
+        int semantic_error = 0;
         add_scope("global", 0, none);
-        check_program(myprogram, "global");
-        check_second_run(myprogram, "global");
+        semantic_error += check_program(myprogram, "global");
+        semantic_error += check_second_run(myprogram, "global");
+        if(semantic_error < 0){
+            // show errors? maybe not
+            //free table too
+            print_error_tree(myprogram);
+            return 0;
+        }
         show_table();
         print_annotated_tree(myprogram, 0, "global", 0);
+        // free table
         return 0;
     }else{
-        free_tree(myprogram);
     }
     return 0;
 }

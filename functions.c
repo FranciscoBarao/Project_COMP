@@ -5,6 +5,46 @@
 
 extern Scope_element* scope_table;
 
+const char* expression_to_string(Structure *node){
+    if(strcmp(node->token->val, "Assign") == 0){
+        return "=";
+    }else if(strcmp(node->token->val, "Or") == 0){
+        return "||";
+    }else if(strcmp(node->token->val, "And") == 0){
+        return "&&";
+    }else if(strcmp(node->token->val, "Lt") == 0){
+        return "<";
+    }else if(strcmp(node->token->val, "Gt") == 0){
+        return ">";
+    }else if(strcmp(node->token->val, "Le") == 0){
+        return "<=";
+    }else if(strcmp(node->token->val, "Ge") == 0){
+        return ">=";
+    }else if(strcmp(node->token->val, "Eq") == 0){
+        return "==";
+    }else if(strcmp(node->token->val, "Ne") == 0){
+        return "!=";
+    }else if(strcmp(node->token->val, "Add") == 0){
+        return "+";
+    }else if(strcmp(node->token->val, "Sub") == 0){
+        return "-";
+    }else if(strcmp(node->token->val, "Mul") == 0){
+        return "*";
+    }else if(strcmp(node->token->val, "Div") == 0){
+        return "/";
+    }else if(strcmp(node->token->val, "Not") == 0){
+        return "!";
+    }else if(strcmp(node->token->val, "If") == 0){
+        return "if";
+    }else if(strcmp(node->token->val, "For") == 0){
+        return "for";
+    }else if(strcmp(node->token->val, "ParseArgs") == 0){
+        return "strconv.Atoi";
+    }else{
+        return node->token->val;
+    }
+}
+
 const char* type_to_string(basic_type t){
     switch(t) {
         case integer:
@@ -64,6 +104,7 @@ Structure* create_node(char* val, int col, int l, Type_node type, Structure *chi
     node->token = token;
     node->type = type;
     node->value_type = undef;
+    node->is_global = 0;
 
     return node;
 }
@@ -122,6 +163,7 @@ Table_element *insert_variable(char* scope_name, char *str, basic_type t){
         strcpy(new_symbol->name, str);
         new_symbol->type=t;
         new_symbol->next=NULL;
+        new_symbol->is_used=0;
         if(symbol_table){	
             //Procura cauda da lista e verifica se simbolo ja existe
             for(aux=symbol_table; aux; previous=aux, aux=aux->next)
@@ -201,15 +243,23 @@ void show_table(){
 }
 
 //Procura um identificador, devolve 0 caso nao exista
-Table_element *search_variable(char* scope_name, char *str){
+Special_element *search_variable(char* scope_name, char *str){
+    Special_element *special = (Special_element*) malloc(sizeof(Special_element));
     Scope_element *scope = get_scope(scope_name);
     if(scope != NULL){
         Table_element *symbol_table = scope->variables;
         Table_element *aux;
 
         for(aux=symbol_table; aux; aux=aux->next){
-            if(strcmp(aux->name, str)==0)
-                return aux;
+            if(strcmp(aux->name, str)==0){
+                special->element = aux;
+                if(strcmp(scope_name, "global") == 0){
+                    special->is_global = 1;
+                }else{
+                    special->is_global = 0;
+                }
+                return special;
+            }
         }
     }
     if(strcmp(scope_name, "global") != 0){

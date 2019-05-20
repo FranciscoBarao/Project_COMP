@@ -31,10 +31,11 @@ typedef struct _s2{
 }Token;
 
 typedef struct _s1{
-  char error[100];
+  char *error;
   Token *token;
   Type_node type;
   basic_type value_type;
+  int is_global;
   struct _s1 *brother;
   struct _s1 *child;
 }Structure;
@@ -53,5 +54,16 @@ typedef struct _t1{
   struct _t2 *variables;
 	struct _t1 *next;
 } Scope_element;
+
+typedef struct _t3
+{
+  struct _t2 *element;
+  int is_global;
+} Special_element;
+
+typedef struct _s10{
+  basic_type type;
+  struct _s10 *next;
+} Call_types;
 
 #endif
