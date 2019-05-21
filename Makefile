@@ -21,6 +21,10 @@ compile_yacc_flags: gocompiler.l gocompiler.y
 compile_main: y.tab.c lex.yy.c functions.c semantics.c
 	gcc -o main y.tab.c lex.yy.c functions.c semantics.c
 
+make_llvm: Test.c
+	clang-3.9 -S -emit-llvm Test.c
+
+
 run: 
 		./main -s
 run_test:
