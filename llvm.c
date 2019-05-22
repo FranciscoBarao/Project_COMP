@@ -6,33 +6,38 @@
 #include <string.h>
 //Clang 3.8.1 -> segfaults appear on llvm
 
-void produce(Structure *node, char* scope_name,int* count_label, int* count ){
+int produce(Structure *node, char* scope_name,int* count_label, int* count ,int needs_return){
     //NAO ESQUECER
     //   --> produce_declarations("global");
 
-    if(node == NULL) return;
+    if(node == NULL) return needs_return;
     Structure* tmp = node;
 
     switch(tmp->type) {
         case Assign:
             produce_assign(tmp, scope_name,count);
-            produce(tmp->brother, scope_name, count_label, count);
+            produce(tmp->brother, scope_name, count_label, count, needs_return);
             break;
         case FuncDecl:
             produce_header(tmp->child->child, tmp->child->child->token->val);
             produce_declarations(tmp->child->child->token->val);
-            produce(tmp->child, tmp->child->child->token->val, count_label, count);
-            printf("\n}\n");
-            produce(tmp->brother, scope_name, count_label, count);
+            
+            needs_return = 0;
+            int n_return = produce(tmp->child, tmp->child->child->token->val, count_label, count, needs_return);
+            if(n_return==0) printf("ret void\n");
+            printf("}\n");
+            produce(tmp->brother, scope_name, count_label, count, needs_return);
             break;
         case Statement:
             produce_statement(node, scope_name, count_label, count);
+            if(strcmp(node->token->val,"Return")==0) needs_return = 1;
             break;
         default :
-            produce(tmp->child, scope_name, count_label, count);
-            produce(tmp->brother, scope_name, count_label, count);  
+            produce(tmp->child, scope_name, count_label, count, needs_return);
+            produce(tmp->brother, scope_name, count_label, count, needs_return);  
             break;      
     }
+    return needs_return;
 }
 
 const char* type_to_llvm(basic_type t){
@@ -48,7 +53,6 @@ const char* type_to_llvm(basic_type t){
 
 
 void produce_header(Structure* node, char* scope_name){
-
     printf("define %s @%s(",type_to_llvm(node->brother->value_type),node->token->val);
     Scope_element* scope = get_scope(scope_name);
     Table_element* aux = NULL;
@@ -59,28 +63,40 @@ void produce_header(Structure* node, char* scope_name){
             aux = aux->next;
         }
     }
-    printf("\b\b) {\n");
-    return;
+    if(scope->number_of_params > 0){
+        printf("\b\b) {\n");
+    }else{
+        printf(") {\n");
+    }
 }
 
 void produce_declarations(char* scope_name){
     //Percorrer tabela simbolos e dar external global ou alloca
     Special_element *special = (Special_element*) malloc(sizeof(Special_element));
     Scope_element *scope = get_scope(scope_name);
+    int i = scope->number_of_params;
 
     char* tmp = (char*) malloc(sizeof(char)*50);
     if(scope != NULL){
         Table_element *symbol_table = scope->variables;
         Table_element *aux;
+        int index=0;
 
         for(aux=symbol_table; aux; aux=aux->next){
-            if(strcmp(scope_name, "global")==0)
+            if(strcmp(scope_name, "global")==0){
                 if(aux->type != function)
                     printf("@%s = global %s\n",aux->name,type_to_llvm(aux->type));
-            else{
-                sprintf(tmp,"%d",scope->number_of_params);
-                printf("%%%s = alloca %s\n",aux->name,type_to_llvm(aux->type));
-                printf("store %s %%%s, %s* %%%s\n",type_to_llvm(aux->type),tmp,type_to_llvm(aux->type),aux->name);
+            }else{
+                if(aux->type != function){
+                    if(index<scope->number_of_params){
+                        sprintf(tmp,"%d",index);
+                        printf("%%%s = alloca %s\n",aux->name,type_to_llvm(aux->type));
+                        printf("store %s %%%s, %s* %%%s\n",type_to_llvm(aux->type),tmp,type_to_llvm(aux->type),aux->name);
+                    }else{
+                        printf("%%%s = alloca %s\n",aux->name,type_to_llvm(aux->type));
+                    }
+                    index++;
+                }
             }
         } 
     }
@@ -99,7 +115,7 @@ void produce_statement(Structure* node, char* scope_name, int* count_label,int* 
 
         if(node->child->brother->brother->child != NULL){
             label_true = *count_label;
-            label_false = *count_label++;
+            label_false = *count_label++ ;
             label_end = *count_label++;
 
         printf("br i1 %%%s, label %%label%d, label %%label%d\n",expr,label_true,label_false);
@@ -110,16 +126,17 @@ void produce_statement(Structure* node, char* scope_name, int* count_label,int* 
         printf("br i1 %%%s, label %%label%d, label %%label%d\n",expr,label_true,label_end);
         }
         printf("label%d:\n",label_true);
-        produce(node->child->brother->child,scope_name,count_label,count);
+        produce(node->child->brother->child,scope_name,count_label,count, 0);
         printf("br label label%d\n",label_end);
         if(node->child->brother->brother->child != NULL){
             printf("label%d:\n",label_false);
-            produce(node->child->brother->brother->child,scope_name,count_label,count);
+            produce(node->child->brother->brother->child,scope_name,count_label,count, 0);
             printf("br label label%d\n",label_end);
         }
 
     }else if(strcmp(node->token->val, "For")==0){
         
+
     }else if(strcmp(node->token->val, "Return")==0){
         if(node->child == NULL){
             printf("ret void\n");
@@ -136,9 +153,9 @@ void produce_assign(Structure* node, char* scope_name,int* count){
     char* expr = (char*) malloc(sizeof(char)*50);
     expr = produce_expression(node->child->brother,scope_name,count);
     if(node->is_global)
-        printf("store %s %%%s, %s* @%s",type_to_llvm(node->value_type),expr,type_to_llvm(node->value_type),node->child->token->val);
+        printf("store %s %%%s, %s* @%s\n",type_to_llvm(node->value_type),expr,type_to_llvm(node->value_type),node->child->token->val);
     else
-        printf("store %s %%%s, %s* %%%s",type_to_llvm(node->value_type),expr,type_to_llvm(node->value_type),node->child->token->val);
+        printf("store %s %%%s, %s* %%%s\n",type_to_llvm(node->value_type),expr,type_to_llvm(node->value_type),node->child->token->val);
     return;
   }
 
@@ -148,7 +165,6 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
     char* expr2 = (char*) malloc(sizeof(char)*150);
 
     char* tmp = (char*) malloc(sizeof(char)*150);
-    printf("\nexpr\n");
 
     if(node->type == Block){
         return "";
@@ -156,16 +172,16 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
         sprintf(tmp,".%d",*count);
         printf("%%%s = call %s @%s(",tmp,type_to_llvm(node->value_type),node->child->token->val);
         
-        for(Structure* ptr = node->child->brother;node != NULL;node = node->brother){
+        for(Structure* ptr = node->child->brother;ptr != NULL;ptr = ptr->brother){
             if(ptr->brother == NULL){
                 char* expr = produce_expression(ptr, scope_name, count);
                 printf("%s %s)\n",type_to_llvm(ptr->value_type),expr);
+            }else{
+                char* expr = produce_expression(ptr, scope_name, count);
+                printf("%s %s, ",type_to_llvm(ptr->value_type),expr);
             }
-
-            char* expr = produce_expression(ptr, scope_name, count);
-            printf("%s %s, ",type_to_llvm(ptr->value_type),expr);
         }   
-        *count++;
+        *count = *count + 1;
         return tmp;
     }
     
@@ -175,10 +191,8 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
     if(node->brother != NULL) { 
         expr2 = produce_expression(node->brother, scope_name,count);
     }
-    printf("\nSPRINTF\n");
-    printf("\n%d\n",*count);
+
     sprintf(tmp,".%d",*count); //var name is %Count
-    printf("\nSPRINTF\n");
 
     if(node->type == Expression){
         printf("%%%s = ",tmp);
@@ -239,14 +253,15 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
             printf("xor i1 %s, true\n",expr1);
         }
 
-        *count++;
+        *count = *count+1;
         return tmp;
     }else if(node->type == id){
-        if(node->is_global)
-          printf("%%.%s = load %s, %s* @%s",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
-        else
-            printf("%%.%s = load %s, %s* %%%s",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
-        *count++;
+        if(node->is_global){
+            printf("%%%s = load %s, %s* @%s\n",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
+        }else{
+            printf("%%%s = load %s, %s* %%%s\n",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
+        }
+        *count = *count+1;
         return tmp;  
     }else{
         //casos primitivos, retorna valor || ex : add var , '2' <--
@@ -256,7 +271,8 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
 
 
 /*
-Strlit -> Aloc.. push da string la para dentro e imprime
+Strlit -> Aloc.. push da s        *count = *count+1;
+tring la para dentro e imprime
 OU
 tabela de ponteiros para por global mais tarde.. <- Mais complexo mas melhor em casos recursivos
 */

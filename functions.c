@@ -40,6 +40,14 @@ const char* expression_to_string(Structure *node){
         return "for";
     }else if(strcmp(node->token->val, "ParseArgs") == 0){
         return "strconv.Atoi";
+    }else if(strcmp(node->token->val, "Return") == 0){
+        return "return";
+    }else if(strcmp(node->token->val, "Plus") == 0){
+        return "+";
+    }else if(strcmp(node->token->val, "Minus") == 0){
+        return "-";
+    }else if(strcmp(node->token->val, "Mod") == 0){
+        return "%";
     }else{
         return node->token->val;
     }
@@ -60,7 +68,7 @@ const char* type_to_string(basic_type t){
         case undef:
             return "undef";
         case function:
-            return "teste";
+            return "function";
         default:
             return "error";
     }
@@ -105,6 +113,7 @@ Structure* create_node(char* val, int col, int l, Type_node type, Structure *chi
     node->type = type;
     node->value_type = undef;
     node->is_global = 0;
+    node->error[0] = 0;
 
     return node;
 }

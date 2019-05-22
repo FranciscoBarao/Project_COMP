@@ -3,7 +3,7 @@
 #include "functions.h"
 
 
-void produce(Structure *node, char* scope_name,int* count_label, int* count );
+int produce(Structure *node, char* scope_name,int* count_label, int* count, int needs_return);
 const char* type_to_llvm(basic_type t );
 void produce_header(Structure* node, char* scope_name);
 void produce_declarations(char* scope_name);

@@ -1,6 +1,7 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE 1
 #endif
+
 #include "structures.h"
 #include "functions.h"
 #include "semantics.h"
@@ -29,6 +30,7 @@ int check_second_run(Structure *node, char* scope_name ){ //Second run of tree
     int is_error = 0;
     switch(tmp->type) {
         case FuncHeader:
+            if(node->error[0] != 0 || node->child->error[0] != 0) return -1;
             is_error += check_second_run(tmp->child, tmp->child->token->val);
             is_error += check_second_run(tmp->brother, tmp->child->token->val);
             break;
@@ -49,13 +51,12 @@ int check_second_run(Structure *node, char* scope_name ){ //Second run of tree
             is_error += check_second_run(tmp->brother, scope_name);  
             break;
         case Call: //Function Invocation 
-            //Check if they exist and if params are well
             is_error += check_function_invocation(tmp, scope_name);
             is_error += check_second_run(tmp->brother, scope_name);
             break;
         default:
             is_error += check_second_run(tmp->child, scope_name);
-            is_error += check_second_run(tmp->brother, scope_name);  
+            is_error += check_second_run(tmp->brother, scope_name);
             break;      
     }
     return is_error;
@@ -65,6 +66,7 @@ int check_program(Structure *node, char* scope_name ){ //First run of tree
     if(node == NULL) return 0;
     Structure* tmp = node;
     Special_element *special;
+    Scope_element *scp;
     int is_error = 0;
     switch(tmp->type) {
         case VarDecl:
@@ -72,10 +74,16 @@ int check_program(Structure *node, char* scope_name ){ //First run of tree
             is_error += check_program(tmp->brother, scope_name);  
             break;
         case FuncHeader:
-            add_scope(tmp->child->token->val, get_number_params(tmp), val_to_basic(tmp->child->brother->token->val));
-            is_error += check_variable(tmp->child, scope_name, tmp->child->token->val, function);
-            is_error += check_program(tmp->child, tmp->child->token->val);
-            is_error += check_program(tmp->brother, tmp->child->token->val);
+            scp = add_scope(tmp->child->token->val, get_number_params(tmp), val_to_basic(tmp->child->brother->token->val));
+            if(scp == NULL){
+                sprintf(node->error, "Line %d, column %d: Symbol %s already defined\n",node->child->token->l,node->child->token->col,node->child->token->val);
+                return -1;
+            }else{
+                is_error += check_variable(tmp->child, scope_name, tmp->child->token->val, function);
+                if(is_error < 0) return -1;
+                is_error += check_program(tmp->child, tmp->child->token->val);
+                is_error += check_program(tmp->brother, tmp->child->token->val);
+            }
             break;
         case ParamDecl:
             is_error += check_variable(tmp->child->brother, scope_name, tmp->child->brother->token->val, val_to_basic(tmp->child->token->val));
@@ -155,7 +163,6 @@ int check_function_invocation(Structure* node ,char* scope_name){
                 linked = linked->next;
             }
             error_string = concat(error_string, ")\n");
-            node->error = malloc(sizeof(char) * 300);
             strcpy(node->error, error_string);
             value_to_return += -1;
         }
@@ -176,10 +183,9 @@ int check_function_invocation(Structure* node ,char* scope_name){
                 tmp = tmp->brother;
             }
             error_string = concat(error_string, ")\n");
-            node->error = malloc(sizeof(char) * 300);
             strcpy(node->error, error_string);
         }else{
-            asprintf(&node->error, "Line %d, column %d: Cannot find symbol %s()\n",node->child->token->l,node->child->token->col,node->child->token->val);
+            sprintf(node->error, "Line %d, column %d: Cannot find symbol %s()\n",node->child->token->l,node->child->token->col,node->child->token->val);
         }
         value_to_return += -1;
     }
@@ -202,15 +208,15 @@ basic_type check_parseArgs(Structure* node ,char* scope_name){
         //Int  -> Atoi (args[int])
         if(id->type == integer && temp == integer){
             return integer;
-        } //Assign Types are correct
-        //[NEEDS DOING] --> Meter boolean a true de ser usado  
+        } 
         else{
-            asprintf(&node->error, "Line %d, column %d: Operator %s cannot be applied to types %s, %s\n",node->token->l,node->token->col,expression_to_string(node),type_to_string(id->type),type_to_string(temp));
+            sprintf(node->error, "Line %d, column %d: Operator %s cannot be applied to types %s, %s\n",node->token->l,node->token->col,expression_to_string(node),type_to_string(id->type),type_to_string(temp));
             return undef;
         }
     }
     else{  //variable doesn´t exist locally or globally
-        asprintf(&node->error, "Line %d, column %d: Cannot find symbol %s\n",node->token->l,node->token->col,node->token->val);
+        sprintf(node->error, "Line %d, column %d: Cannot find symbol %s\n",node->token->l,node->token->col,node->token->val);
+        check_expression(node->child->brother,scope_name);
         return undef;
     }
 }
@@ -220,7 +226,7 @@ int check_statement(Structure* node ,char* scope_name){
     if(strcmp(node->token->val, "If")==0 || strcmp(node->token->val, "For")==0) {
         basic_type tmp = check_expression(node->child,scope_name);
         if (tmp != boolean){
-            asprintf(&node->error, "Line %d, column %d: Incompatible type %s in %s statement\n",node->child->token->l,node->child->token->col,type_to_string(tmp),expression_to_string(node));
+            sprintf(node->error, "Line %d, column %d: Incompatible type %s in %s statement\n",node->child->token->l,node->child->token->col,type_to_string(tmp),expression_to_string(node));
             value_to_return += -1;
         }
     }
@@ -234,7 +240,7 @@ int check_statement(Structure* node ,char* scope_name){
             Scope_element* scope = get_scope(scope_name);
             if(tmp == scope->type);
             else{
-                asprintf(&node->error, "Line %d, column %d: Incompatible type %s in %s statement",node->token->l,node->token->col,type_to_string(tmp),node->token->val); 
+                sprintf(node->error, "Line %d, column %d: Incompatible type %s in %s statement\n",node->child->token->l,node->child->token->col,type_to_string(tmp),expression_to_string(node)); 
                 value_to_return += -1;
             }
         }
@@ -250,7 +256,7 @@ int check_statement(Structure* node ,char* scope_name){
 int check_variable_use(Structure* node,char* scope_name){
     Table_element* n = search_variable(scope_name,node->token->val)->element;
     if(n != NULL && !n->is_used){
-        asprintf(&node->error, "Line %d, column %d: Symbol %s declared  but  never  used",node->token->l,node->token->col,node->token->val);   
+        sprintf(node->error, "Line %d, column %d: Symbol %s declared  but  never  used",node->token->l,node->token->col,node->token->val);
         return -1;
     }
     return 0;
@@ -261,7 +267,7 @@ void octal(Structure* node, char* octal){
     if(octal[0] == '0' && octal[1] != 'x' && octal[1] != 'X'){
         for(i=1;i < sizeof(octal)/sizeof(char); i++){
             if(atoi(&octal[i]) >= 8){
-                asprintf(&node->error, "Line %d, column %d: Invalid octal constant: %s\n",node->token->l,node->token->col,node->token->val);   
+                sprintf(node->error, "Line %d, column %d: Invalid octal constant: %s\n",node->token->l,node->token->col,node->token->val);   
                 return;
             }
         }
@@ -274,7 +280,7 @@ int check_variable(Structure* node ,char* scope_name, char *str, basic_type t){
     Table_element* new = insert_variable(scope_name, str, t);
     
     if(new == NULL){
-        asprintf(&node->error, "Line %d, column %d: Symbol %s already defined\n",node->token->l,node->token->col,node->token->val);
+        sprintf(node->error, "Line %d, column %d: Symbol %s already defined\n",node->token->l,node->token->col,node->token->val);
         return -1;
     }else{
         if(strcmp(scope_name, "global") == 0){
@@ -287,8 +293,8 @@ int check_variable(Structure* node ,char* scope_name, char *str, basic_type t){
 int check_variable_for_used(Structure* node, char* scope_name){
     Structure *aux = node->child->brother;
     Table_element *variable = search_variable(scope_name, aux->token->val)->element;
-    if(variable->is_used == 0){
-        asprintf(&node->error, "Line %d, column %d: Symbol %s declared but never used\n",aux->token->l,aux->token->col,aux->token->val);
+    if(variable->is_used == 0 && variable->type != function && aux->error[0] == 0){
+        sprintf(node->error, "Line %d, column %d: Symbol %s declared but never used\n",aux->token->l,aux->token->col,aux->token->val);
         return -1;
     }else{
         return 0;
@@ -311,17 +317,19 @@ int check_assign(Structure* node, char* scope_name){
         id->is_used = 1;
         tmp = check_expression(aux->brother,scope_name);
         node->value_type = tmp;
-        if(id->type == tmp || (id->type == integer && tmp == string)){
+        if(id->type == tmp){
             //Assign Types are correct
             //[NEEDS DOING] -> meter used_boolean = true;
         }
         else{
-            asprintf(&node->error, "Line %d, column %d: Operator %s cannot be applied to types %s, %s\n",node->token->l, node->token->col, expression_to_string(node), type_to_string(id->type),type_to_string(tmp));
+            sprintf(node->error, "Line %d, column %d: Operator %s cannot be applied to types %s, %s\n",node->token->l, node->token->col, expression_to_string(node), type_to_string(id->type),type_to_string(tmp));
             return -1;
         }
     }
     else{  //variable doesn´t exist locally or globally
-        asprintf(&aux->error, "Line %d, column %d: Cannot find symbol %s\n",aux->token->l,aux->token->col,aux->token->val);
+        sprintf(aux->error, "Line %d, column %d: Cannot find symbol %s\n",aux->token->l,aux->token->col,aux->token->val);
+        tmp = check_expression(aux->brother,scope_name);
+        sprintf(node->error, "Line %d, column %d: Operator %s cannot be applied to types %s, %s\n",node->token->l, node->token->col, expression_to_string(node), type_to_string(undef),type_to_string(tmp));
         return -1;
     }
     return 0;
@@ -340,8 +348,8 @@ basic_type type_to_node(Structure* node, basic_type type){
 }
 
 void type_error(Structure* node, basic_type t1, basic_type t2){
-    if(strcmp(node->token->val,"Not") == 0 || strcmp(node->token->val,"Minus") == 0 || strcmp(node->token->val,"Plus") == 0)   asprintf(&node->error, "Line %d, column %d: Operator %s cannot be applied to type %s\n",node->token->l,node->token->col,expression_to_string(node),type_to_string(t1));
-    else    asprintf(&node->error, "Line %d, column %d: Operator %s cannot be applied to types %s, %s\n",node->token->l,node->token->col,expression_to_string(node),type_to_string(t1),type_to_string(t2));
+    if(strcmp(node->token->val,"Not") == 0 || strcmp(node->token->val,"Minus") == 0 || strcmp(node->token->val,"Plus") == 0)   sprintf(node->error, "Line %d, column %d: Operator %s cannot be applied to type %s\n",node->token->l,node->token->col,expression_to_string(node),type_to_string(t1));
+    else    sprintf(node->error, "Line %d, column %d: Operator %s cannot be applied to types %s, %s\n",node->token->l,node->token->col,expression_to_string(node),type_to_string(t1),type_to_string(t2));
     return;
 }
 
@@ -428,13 +436,13 @@ basic_type check_expression(Structure* node, char* scope_name){
                     }else{
                         aux = search_variable(scope_name, node->token->val);
                     }
-                    if (aux != NULL) {  //Existe
+                    if (aux != NULL && aux->element->type != function) {  //Existe
                         tmp = aux->element;
                         tmp->is_used = 1;
                         final_type = tmp->type;
                     }else{
                         final_type = undef;
-                        asprintf(&node->error, "Line %d, column %d: Cannot find symbol %s\n",node->token->l,node->token->col,node->token->val);
+                        sprintf(node->error, "Line %d, column %d: Cannot find symbol %s\n",node->token->l,node->token->col,node->token->val);
                     }
                     break;
                 default:
@@ -477,13 +485,13 @@ basic_type check_expression_for_call(Structure *node, char* scope_name){
             }else{
                 aux = search_variable(scope_name, node->token->val);
             }
-            if (aux != NULL) {  //Existe
+            if (aux != NULL && aux->element->type != function) {  //Existe
                 tmp = aux->element;
                 tmp->is_used = 1;
                 final_type = tmp->type;
             }else{
                 final_type = undef;
-                asprintf(&node->error, "Line %d, column %d: Cannot find symbol %s\n",node->token->l,node->token->col,node->token->val);
+                sprintf(node->error, "Line %d, column %d: Cannot find symbol %s\n",node->token->l,node->token->col,node->token->val);
             }
             break;
         case Expression:
