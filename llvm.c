@@ -29,6 +29,7 @@ int produce(Structure *node, char* scope_name,int* count_label, int* count ,int 
             break;
         case Statement:
             needs_return = produce_statement(node, scope_name, count_label, count);
+            needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return);  
             break;
         default :
             needs_return = produce(tmp->child, scope_name, count_label, count, needs_return);
@@ -147,7 +148,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
             
             printf("label%d:\n",label_block);
             produce(node->child->brother->child,scope_name,count_label,count, 0);
-            printf("label%d:\n",label_condition);
+            printf("br label %%label%d\n",label_condition);
 
         }else{
             label_block = *count_label;
