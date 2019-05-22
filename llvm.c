@@ -178,13 +178,13 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
         expr = produce_expression(node->child,scope_name,count);
         switch (node->child->value_type){
         case integer:
-                printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%d\\0A\\00\"");
+                printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%d\\0A\\00\"\n");
             break;
         case float32:
-                printf("@.str_format = private unnamed_addr constant [4 x i8] c\".08f\\0A\\00\"");
+                printf("@.str_format = private unnamed_addr constant [4 x i8] c\".08f\\0A\\00\"\n");
             break;
         case string:
-                printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"");
+                printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"\n");
             break;
         case boolean:
                 label_true = *count_label;
@@ -196,31 +196,31 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
                 char* text_true = (char*) malloc(sizeof(char)*50);
                 sprintf(text_true,".%d",*count);
                 *count = *count + 1;
-                printf("@.str_format = private unnamed_addr constant [6 x i8] c\"true\\0A\\00\"");
-                printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0", text_true);
-                printf("call i32 (i8*, ...) @printf(i8* %s)", text_true);
+                printf("@.str_format = private unnamed_addr constant [6 x i8] c\"true\\0A\\00\"\n");
+                printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0\n", text_true);
+                printf("call i32 (i8*, ...) @printf(i8* %s)\n", text_true);
                 printf("br label label%d\n",label_end);
                 printf("label%d:\n",label_false);
                 // false
                 char* text_false = (char*) malloc(sizeof(char)*50);
                 sprintf(text_false,".%d",*count);
                 *count = *count + 1;
-                printf("@.str_format = private unnamed_addr constant [6 x i8] c\"true\\0A\\00\"");
-                printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0", text_false);
-                printf("call i32 (i8*, ...) @printf(i8* %s)", text_false);
+                printf("@.str_format = private unnamed_addr constant [6 x i8] c\"true\\0A\\00\"\n");
+                printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0\n", text_false);
+                printf("call i32 (i8*, ...) @printf(i8* %s)\n", text_false);
                 printf("br label label%d\n",label_end);
                 printf("label%d:\n",label_end);
                 return 0;
             break;
         default:
-                printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"");
+                printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"\n");
             break;
         }
         char* str_format = (char*) malloc(sizeof(char)*50);
         sprintf(str_format,".%d",*count);
         *count = *count + 1;
-        printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0", str_format);
-        printf("call i32 (i8*, ...) @printf(i8* %s, %s %s)", str_format, type_to_llvm(node->child->value_type), expr);
+        printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0\n", str_format);
+        printf("call i32 (i8*, ...) @printf(i8* %s, %s %s)\n", str_format, type_to_llvm(node->child->value_type), expr);
     }
     return 0;
 }
@@ -344,7 +344,14 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
             char *float_str = (char *)malloc(sizeof(char) * 100);
             sprintf(float_str, "0%s", node->token->val);
             return float_str;
-        } 
+        }
+        int str_size = strlen(node->token->val); 
+        char *second_string = (char *)malloc(sizeof(char) * 100);
+        for(int i=0; i<str_size-1; i++){
+            if(node->token->val[i] == '.' && (node->token->val[i+1] == 'e' || node->token->val[i+1] == 'E')){
+
+            }
+        }
         return node->token->val;
     }
 }
