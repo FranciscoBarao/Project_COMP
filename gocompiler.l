@@ -74,7 +74,7 @@ letter          [a-zA-Z_]+
 
  /*Keywords */
 "package"       {if(tokens) printf("PACKAGE\n"); col(); semicollon(0); if(!tokens) return PACKAGE;}
-"return"        {if(tokens) printf("RETURN\n"); col(); semicollon(1); if(!tokens) return RETURN;}
+"return"        {if(tokens) printf("RETURN\n"); col(); semicollon(1); if(!tokens){identifier_to_token(); return RETURN;}}
 "else"          {if(tokens) printf("ELSE\n"); col(); semicollon(0); if(!tokens) return ELSE;}
 "if"            {if(tokens) printf("IF\n"); col(); semicollon(0); if(!tokens) return IF;}
 "for"           {if(tokens) printf("FOR\n"); col(); semicollon(0); if(!tokens) return FOR;}

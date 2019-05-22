@@ -94,24 +94,7 @@ void produce_statement(Structure* node, char* scope_name, int* count_label,int* 
 
     int label_true,label_false,label_end;
 
-    if(strcmp(node->token->val, "If")==0) {
-        if(node->brother != NULL){
-            label_true = count_label;
-            label_false = count_label++;
-            label_end = count_label++;
-        }else{
-            label_true=count_label;
-            label_end = count_label++;
-        }
-        expr = produce_expression(node->child,scope_name,count);
-        printf("br i1 %%%s, label %%label%d, label %%label%d\n",expr,label_true,label_false);
-        for(Structure* ptr = node->child->brother;node != NULL;node = node->brother){
-            if(ptr->brother == NULL){
-            }
-        } 
-
-      
-    }else if(strcmp(node->token->val, "For")==0){
+    if(strcmp(node->token->val, "For")==0){
 
     }else if(strcmp(node->token->val, "Return")==0){
         if(node->child == NULL){
@@ -129,9 +112,9 @@ void produce_assign(Structure* node, char* scope_name,int* count){
     char* expr = (char*) malloc(sizeof(char)*50);
     expr = produce_expression(node->child->brother,scope_name,count);
     if(node->is_global)
-        printf("store %s %%%s, %s* @%s",type_to_llvm(node->value_type),expr,type_to_llvm(node->value_type),node->child->token->val);
+        printf("store %s %%%s, %s* @%s\n",type_to_llvm(node->value_type),expr,type_to_llvm(node->value_type),node->child->token->val);
     else
-        printf("store %s %%%s, %s* %%%s",type_to_llvm(node->value_type),expr,type_to_llvm(node->value_type),node->child->token->val);
+        printf("store %s %%%s, %s* %%%s\n",type_to_llvm(node->value_type),expr,type_to_llvm(node->value_type),node->child->token->val);
     return;
   }
 
@@ -141,7 +124,6 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
     char* expr2 = (char*) malloc(sizeof(char)*150);
 
     char* tmp = (char*) malloc(sizeof(char)*150);
-    printf("\nexpr\n");
 
     if(node->type == Block){
         return "";
@@ -158,7 +140,7 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
             char* expr = produce_expression(ptr, scope_name, count);
             printf("%s %s, ",type_to_llvm(ptr->value_type),expr);
         }   
-        *count++;
+        *count = *count + 1;
         return tmp;
     }
     
@@ -168,10 +150,8 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
     if(node->brother != NULL) { 
         expr2 = produce_expression(node->brother, scope_name,count);
     }
-    printf("\nSPRINTF\n");
-    printf("\n%d\n",*count);
+
     sprintf(tmp,".%d",*count); //var name is %Count
-    printf("\nSPRINTF\n");
 
     if(node->type == Expression){
         printf("%%%s = ",tmp);
@@ -236,9 +216,9 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
         return tmp;
     }else if(node->type == id){
         if(node->is_global)
-          printf("%%.%s = load %s, %s* @%s",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
+          printf("%%.%s = load %s, %s* @%s\n",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
         else
-            printf("%%.%s = load %s, %s* %%%s",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
+            printf("%%.%s = load %s, %s* %%%s\n",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
         *count++;
         return tmp;  
     }else{

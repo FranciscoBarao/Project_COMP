@@ -4,6 +4,7 @@
     #include <string.h>
     #include "functions.h"
     #include "semantics.h"
+    #include "llvm.h"
     #include "y.tab.h"
 
     int yylex(void);
@@ -28,7 +29,9 @@
 %token<value> ASSIGN
 %token<node> COMMA LBRACE RBRACE LPAR RPAR LSQ RSQ
 //Keyword
-%token<node>PACKAGE RETURN ELSE IF FOR VAR PRINT FUNC 
+%token<node>PACKAGE
+%token<value>RETURN
+%token<node>ELSE IF FOR VAR PRINT FUNC 
 %token<value>PARSEINT 
 %token<node>CMDARGS RESERVED
 %token flag
@@ -194,8 +197,8 @@ for_statement:
     ;
 
 return_statement:
-        RETURN                                                  {$$=create_node("Return",0,0,Statement, NULL);}
-    |   RETURN expression                                       {$$=create_node("Return",0,0,Statement, $2);}
+        RETURN                                                  {$$=create_node("Return",$1.col,$1.l,Statement, NULL);}
+    |   RETURN expression                                       {$$=create_node("Return",$1.col,$1.l,Statement, $2);}
     ;
 
 union_statement: 
@@ -259,9 +262,8 @@ int return_column();
 
 void print_error_tree(Structure *node){
     if(node != NULL){
-        if(node->error != NULL){
+        if((node->error[0] != 0)){
             printf("%s", node->error);
-            free(node->error);
         }
         print_error_tree(node->child);
         print_error_tree(node->brother);
@@ -423,30 +425,33 @@ void yyerror (const char *s) {
 }
 
 int main(int argc, char* argv[]){
+    int semantic_error = 0;
     lex_initiate(argc,argv);
     if(argv[1] != NULL && strcmp(argv[1] , "-l")==0) {
         yylex();
         return 0;
     }
     yyparse();
+    add_scope("global", 0, none);
+    semantic_error += check_program(myprogram, "global");
+    semantic_error += check_second_run(myprogram, "global");
     if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-t")==0){
         print_tree(myprogram, 0);
     }else if(!is_error && argv[1] != NULL && strcmp(argv[1] , "-s")==0) {
-        int semantic_error = 0;
-        add_scope("global", 0, none);
-        semantic_error += check_program(myprogram, "global");
-        semantic_error += check_second_run(myprogram, "global");
         if(semantic_error < 0){
-            // show errors? maybe not
-            //free table too
             print_error_tree(myprogram);
-            return 0;
+        }else{
+            show_table();
+            print_annotated_tree(myprogram, 0, "global", 0);
         }
-        show_table();
-        print_annotated_tree(myprogram, 0, "global", 0);
-        // free table
-        return 0;
     }else{
+        if(semantic_error < 0){
+            print_error_tree(myprogram);
+        }else{
+            produce(myprogram,"global",&(int){0},&(int){0});
+            free_tree(myprogram);
+        }
     }
+    //free table too
     return 0;
 }

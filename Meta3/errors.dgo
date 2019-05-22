@@ -16,7 +16,7 @@ func main() {
     var x, y int;
     var b bool;
     b = 1 && 1;
-    i = i + 008;
+    lol = main + teste;
     h();
     h(!i);
     x = 1.0;
