@@ -34,6 +34,7 @@ int produce(Structure *node, char* scope_name,int* count_label, int* count ,int 
             break;
         case ParseArgs:
             produce_parse_args(node, scope_name, count);
+            needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return);  
             break;
         default :
             needs_return = produce(tmp->child, scope_name, count_label, count, needs_return);
@@ -49,6 +50,8 @@ const char* type_to_llvm(basic_type t){
             return "i1";
         case float32:
             return "double";
+        case string:
+            return "i8*";
         default:
             return "i32";
     }
@@ -152,7 +155,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
             
             printf("label%d:\n",label_block);
             produce(node->child->brother->child,scope_name,count_label,count, 0);
-            printf("br label %%label%d\n",label_condition);
+            printf("label%d:\n",label_condition);
 
         }else{
             label_block = *count_label;
@@ -164,21 +167,61 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
             printf("br label %%label%d\n",label_block);
         }
         printf("label%d:\n",label_end);
-
-        
-
-        
-        
-
     }else if(strcmp(node->token->val, "Return")==0){
         if(node->child == NULL){
             printf("ret void\n");
-        }
-        else{
+        }else{
             expr = produce_expression(node->child,scope_name,count);
             printf("ret %s %s\n",type_to_llvm(node->child->value_type),expr);
         }
         return 1;
+    }else if(strcmp(node->token->val, "Print")==0){
+        expr = produce_expression(node->child,scope_name,count);
+        switch (node->child->value_type){
+        case integer:
+                printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%d\\0A\\00\"");
+            break;
+        case float32:
+                printf("@.str_format = private unnamed_addr constant [4 x i8] c\".08f\\0A\\00\"");
+            break;
+        case string:
+                printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"");
+            break;
+        case boolean:
+                label_true = *count_label;
+                label_false = *count_label = *count_label+1;
+                label_end = *count_label = *count_label+1;
+                printf("br i1 %s, label %%label%d, label %%label%d\n",expr,label_true,label_false);
+                printf("label%d:\n",label_true);
+                // true
+                char* text_true = (char*) malloc(sizeof(char)*50);
+                sprintf(text_true,".%d",*count);
+                *count = *count + 1;
+                printf("@.str_format = private unnamed_addr constant [6 x i8] c\"true\\0A\\00\"");
+                printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0", text_true);
+                printf("call i32 (i8*, ...) @printf(i8* %s)", text_true);
+                printf("br label label%d\n",label_end);
+                printf("label%d:\n",label_false);
+                // false
+                char* text_false = (char*) malloc(sizeof(char)*50);
+                sprintf(text_false,".%d",*count);
+                *count = *count + 1;
+                printf("@.str_format = private unnamed_addr constant [6 x i8] c\"true\\0A\\00\"");
+                printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0", text_false);
+                printf("call i32 (i8*, ...) @printf(i8* %s)", text_false);
+                printf("br label label%d\n",label_end);
+                printf("label%d:\n",label_end);
+                return 0;
+            break;
+        default:
+                printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"");
+            break;
+        }
+        char* str_format = (char*) malloc(sizeof(char)*50);
+        sprintf(str_format,".%d",*count);
+        *count = *count + 1;
+        printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0", str_format);
+        printf("call i32 (i8*, ...) @printf(i8* %s, %s %s)", str_format, type_to_llvm(node->child->value_type), expr);
     }
     return 0;
 }
