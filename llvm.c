@@ -95,24 +95,31 @@ void produce_statement(Structure* node, char* scope_name, int* count_label,int* 
     int label_true,label_false,label_end;
 
     if(strcmp(node->token->val, "If")==0) {
-        if(node->brother != NULL){
-            label_true = count_label;
-            label_false = count_label++;
-            label_end = count_label++;
-        }else{
-            label_true=count_label;
-            label_end = count_label++;
-        }
         expr = produce_expression(node->child,scope_name,count);
+
+        if(node->child->brother->brother->child != NULL){
+            label_true = *count_label;
+            label_false = *count_label++;
+            label_end = *count_label++;
+
         printf("br i1 %%%s, label %%label%d, label %%label%d\n",expr,label_true,label_false);
-        for(Structure* ptr = node->child->brother;node != NULL;node = node->brother){
-            if(ptr->brother == NULL){
-            }
-        } 
+        }else{
+            label_true = *count_label;
+            label_end = *count_label++;
+        
+        printf("br i1 %%%s, label %%label%d, label %%label%d\n",expr,label_true,label_end);
+        }
+        printf("label%d:\n",label_true);
+        produce(node->child->brother->child,scope_name,count_label,count);
+        printf("br label label%d\n",label_end);
+        if(node->child->brother->brother->child != NULL){
+            printf("label%d:\n",label_false);
+            produce(node->child->brother->brother->child,scope_name,count_label,count);
+            printf("br label label%d\n",label_end);
+        }
 
-      
     }else if(strcmp(node->token->val, "For")==0){
-
+        
     }else if(strcmp(node->token->val, "Return")==0){
         if(node->child == NULL){
             printf("ret void\n");
