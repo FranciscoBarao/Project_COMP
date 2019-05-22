@@ -1,18 +1,14 @@
 package main;
 
-var q int;
+var a int;
+var b float32;
+var c string;
+var d bool;
 
-func f(){};
-func q(){
-    var x, x int;
-};
+func intfunc2(e int) int { return b; }
 
-func main() int{
-    var x int;
-    x = 2;
-    x = 3;
-    v = x;
-    v = x;
-    v = x;
-    return x;
+func define() {
+    x = a
+    x = b
+    x = a
 }

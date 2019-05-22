@@ -12,29 +12,25 @@ int produce(Structure *node, char* scope_name,int* count_label, int* count ,int 
 
     if(node == NULL) return needs_return;
     Structure* tmp = node;
-
     switch(tmp->type) {
         case Assign:
             produce_assign(tmp, scope_name,count);
-            produce(tmp->brother, scope_name, count_label, count, needs_return);
+            needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return);
             break;
         case FuncDecl:
             produce_header(tmp->child->child, tmp->child->child->token->val);
             produce_declarations(tmp->child->child->token->val);
-            
-            needs_return = 0;
-            int n_return = produce(tmp->child, tmp->child->child->token->val, count_label, count, needs_return);
+            int n_return = produce(tmp->child, tmp->child->child->token->val, count_label, count, 0);
             if(n_return==0) printf("ret void\n");
             printf("}\n");
             produce(tmp->brother, scope_name, count_label, count, needs_return);
             break;
         case Statement:
-            produce_statement(node, scope_name, count_label, count);
-            if(strcmp(node->token->val,"Return")==0) needs_return = 1;
+            needs_return = produce_statement(node, scope_name, count_label, count);
             break;
         default :
-            produce(tmp->child, scope_name, count_label, count, needs_return);
-            produce(tmp->brother, scope_name, count_label, count, needs_return);  
+            needs_return = produce(tmp->child, scope_name, count_label, count, needs_return);
+            needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return);  
             break;      
     }
     return needs_return;
@@ -105,7 +101,7 @@ void produce_declarations(char* scope_name){
 }
 
 
-void produce_statement(Structure* node, char* scope_name, int* count_label,int* count){
+int produce_statement(Structure* node, char* scope_name, int* count_label,int* count){
     char* expr = (char*) malloc(sizeof(char)*50);
 
     int label_true,label_false,label_end;
@@ -145,8 +141,9 @@ void produce_statement(Structure* node, char* scope_name, int* count_label,int* 
             expr = produce_expression(node->child,scope_name,count);
             printf("ret %s %%%s\n",type_to_llvm(node->child->value_type),expr);
         }
+        return 1;
     }
-    return;
+    return 0;
 }
 
 void produce_assign(Structure* node, char* scope_name,int* count){
