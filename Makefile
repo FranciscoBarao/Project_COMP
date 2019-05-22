@@ -9,7 +9,7 @@ compile_lex: Meta1/gocompiler.l lex.yy.c
 		lex Meta1/gocompiler.l
 		clang-3.9 -o main lex.yy.c
 
-compile_yacc: gocompiler.l gocompiler.y 
+compile_yacc: gocompiler.l gocompiler.y
 		lex gocompiler.l
 		yacc -d gocompiler.y
 
@@ -18,8 +18,8 @@ compile_yacc_flags: gocompiler.l gocompiler.y
 		yacc -d ${YACCFLAGS} gocompiler.y
 
 
-compile_main: y.tab.c lex.yy.c functions.c semantics.c
-	gcc -o main y.tab.c lex.yy.c functions.c semantics.c
+compile_main: y.tab.c lex.yy.c functions.c semantics.c llvm.c
+	gcc -o main y.tab.c lex.yy.c functions.c semantics.c llvm.c
 
 make_llvm: Test.c
 	clang-3.9 -S -emit-llvm Test.c
@@ -28,6 +28,6 @@ make_llvm: Test.c
 run: 
 		./main -s
 run_test:
-		./main -t < Test
+		./main -s < Test
 clean: 
 		rm -rf *o main

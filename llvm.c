@@ -1,12 +1,12 @@
 #include "structures.h"
 #include "functions.h"
-#include "semantics.h"
+#include "llvm.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+//Clang 3.8.1 -> segfaults appear on llvm
 
-
-void check_program(Structure *node, char* scope_name, int* count ){
+void produce(Structure *node, char* scope_name,int* count_label, int* count ){
     //NAO ESQUECER
     //   --> produce_declarations("global");
 
@@ -16,29 +16,26 @@ void check_program(Structure *node, char* scope_name, int* count ){
     switch(tmp->type) {
         case Assign:
             produce_assign(tmp, scope_name,count);
-            check_program(tmp->brother, scope_name,count);
+            produce(tmp->brother, scope_name, count_label, count);
             break;
         case FuncDecl:
             produce_header(tmp->child->child, tmp->child->child->token->val);
             produce_declarations(tmp->child->child->token->val);
-            check_program(tmp->child, tmp->child->child->token->val,count);
+            produce(tmp->child, tmp->child->child->token->val, count_label, count);
             printf("\n}\n");
-            check_program(tmp->brother, scope_name, count);
-            break;
-        case ParamDecl:
-            check_program(tmp->brother, scope_name,count);
+            produce(tmp->brother, scope_name, count_label, count);
             break;
         case Statement:
-            produce_statement(node,);
+            produce_statement(node, scope_name, count_label, count);
             break;
         default :
-            check_program(tmp->child, scope_name,count);
-            check_program(tmp->brother, scope_name, count);  
+            produce(tmp->child, scope_name, count_label, count);
+            produce(tmp->brother, scope_name, count_label, count);  
             break;      
     }
 }
 
-const char* type_to_llvm(basic_type t ){
+const char* type_to_llvm(basic_type t){
     switch(t) {
         case boolean:
             return "i1";
@@ -52,7 +49,7 @@ const char* type_to_llvm(basic_type t ){
 
 void produce_header(Structure* node, char* scope_name){
 
-    printf("define %s @%s(",type_to_llvm(node->brother),node->token->val);
+    printf("define %s @%s(",type_to_llvm(node->brother->value_type),node->token->val);
     Scope_element* scope = get_scope(scope_name);
     Table_element* aux = NULL;
     if (scope != NULL){
@@ -63,12 +60,11 @@ void produce_header(Structure* node, char* scope_name){
         }
     }
     printf("\b\b) {\n");
-
+    return;
 }
 
-void produce_declarations(scope_name){
+void produce_declarations(char* scope_name){
     //Percorrer tabela simbolos e dar external global ou alloca
-
     Special_element *special = (Special_element*) malloc(sizeof(Special_element));
     Scope_element *scope = get_scope(scope_name);
 
@@ -80,13 +76,12 @@ void produce_declarations(scope_name){
         for(aux=symbol_table; aux; aux=aux->next){
             if(strcmp(scope_name, "global")==0)
                 if(aux->type != function)
-                    printf("@%s = external global %s\n",aux->name,type_to_llvm(aux->type));
+                    printf("@%s = global %s\n",aux->name,type_to_llvm(aux->type));
             else{
                 sprintf(tmp,"%d",scope->number_of_params);
                 printf("%%%s = alloca %s\n",aux->name,type_to_llvm(aux->type));
                 printf("store %s %%%s, %s* %%%s\n",type_to_llvm(aux->type),tmp,type_to_llvm(aux->type),aux->name);
             }
-            i++;
         } 
     }
     return;
@@ -94,64 +89,77 @@ void produce_declarations(scope_name){
 }
 
 
-void produce_statement(Structure* node, char* scope_name, int* count_label){
-    if(strcmp(node->token->val, "If")==0 ) {
-        //produce_expression(v1)
-        //produce_expression(v2)
-        //Tem de retornar o contador de temporarios para fazer Tcount para imprimir
-        
-        //%name = icmp eq i32 %v1, %v2
-        //i32? why mesmo?
-        //printf("%ifcond%d = icmp i32 %s %s %s",ifcond,node->child->token->val);
-        //integer of amount of ifs..? not sure this is the way..
-    
-        //br i1 %name, label %name2, label %name3
-        //printf("br i1 %ifcond%d, label %%s, label %%s",ifcond);
-        //ifcond++; 
+void produce_statement(Structure* node, char* scope_name, int* count_label,int* count){
+    char* expr = (char*) malloc(sizeof(char)*50);
+
+    int label_true,label_false,label_end;
+
+    if(strcmp(node->token->val, "If")==0) {
+        if(node->brother != NULL){
+            label_true = count_label;
+            label_false = count_label++;
+            label_end = count_label++;
+        }else{
+            label_true=count_label;
+            label_end = count_label++;
+        }
+        expr = produce_expression(node->child,scope_name,count);
+        printf("br i1 %%%s, label %%label%d, label %%label%d\n",expr,label_true,label_false);
+        for(Structure* ptr = node->child->brother;node != NULL;node = node->brother){
+            if(ptr->brother == NULL){
+            }
+        } 
+
+      
+    }else if(strcmp(node->token->val, "For")==0){
+
+    }else if(strcmp(node->token->val, "Return")==0){
+        if(node->child == NULL){
+            printf("ret void\n");
+        }
+        else{
+            expr = produce_expression(node->child,scope_name,count);
+            printf("ret %s %%%s\n",type_to_llvm(node->child->value_type),expr);
+        }
     }
+    return;
 }
 
 void produce_assign(Structure* node, char* scope_name,int* count){
     char* expr = (char*) malloc(sizeof(char)*50);
     expr = produce_expression(node->child->brother,scope_name,count);
     if(node->is_global)
-        printf("store %s %%%s, %s* @%s",type_to_llvm(node),expr,type_to_llvm(node),node->child->token->val);
+        printf("store %s %%%s, %s* @%s",type_to_llvm(node->value_type),expr,type_to_llvm(node->value_type),node->child->token->val);
     else
-        printf("store %s %%%s, %s* %%%s",type_to_llvm(node),expr,type_to_llvm(node),node->child->token->val);
+        printf("store %s %%%s, %s* %%%s",type_to_llvm(node->value_type),expr,type_to_llvm(node->value_type),node->child->token->val);
     return;
-    /*printf("%%%s = ",node->child->token->val);
-    if(node->value_type == boolean){
-        printf("and i1 %s, true\n",expr);
-        return;
-    }
-    else if(node->value_type ==  float32 ){
-        printf("f");
-    }
-    printf("add %s 0, %s\n", type_to_llvm(node->value_type),expr);
-    return;*/
-
-    //store i32 3, i32* %ptr
-}
+  }
 
 char* produce_expression(Structure* node, char* scope_name, int* count){
     
-    char* expr1 = (char*) malloc(sizeof(char)*50);
-    char* expr2 = (char*) malloc(sizeof(char)*50);
+    char* expr1 = (char*) malloc(sizeof(char)*150);
+    char* expr2 = (char*) malloc(sizeof(char)*150);
 
-    char* tmp = (char*) malloc(sizeof(char)*50);
-
+    char* tmp = (char*) malloc(sizeof(char)*150);
+    printf("\nexpr\n");
 
     if(node->type == Block){
-        return; //Might not be Correct!
+        return "";
     }else if(node->type == Call){
-        
-        printf("call %s @%s(",type_to_llvm(node),node->child->token->val);
+        sprintf(tmp,".%d",*count);
+        printf("%%%s = call %s @%s(",tmp,type_to_llvm(node->value_type),node->child->token->val);
         
         for(Structure* ptr = node->child->brother;node != NULL;node = node->brother){
+            if(ptr->brother == NULL){
+                char* expr = produce_expression(ptr, scope_name, count);
+                printf("%s %s)\n",type_to_llvm(ptr->value_type),expr);
+            }
+
             char* expr = produce_expression(ptr, scope_name, count);
-            printf("%s %s, ",type_to_llvm(ptr),expr);
+            printf("%s %s, ",type_to_llvm(ptr->value_type),expr);
         }   
-        printf("\b\b)\n");
+        *count++;
+        return tmp;
     }
     
     if(node->child != NULL){
@@ -160,8 +168,11 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
     if(node->brother != NULL) { 
         expr2 = produce_expression(node->brother, scope_name,count);
     }
-
+    printf("\nSPRINTF\n");
+    printf("\n%d\n",*count);
     sprintf(tmp,".%d",*count); //var name is %Count
+    printf("\nSPRINTF\n");
+
     if(node->type == Expression){
         printf("%%%s = ",tmp);
         if(node->value_type == float32){
@@ -212,19 +223,22 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
         }
          
         else if(strcmp(node->token->val, "And")==0){
-            printf("and i1 %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            printf("and i1 %s, %s\n",expr1,expr2);
             
         }else if(strcmp(node->token->val, "Or")==0){
-            printf("or i1 %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            printf("or i1 %s, %s\n",expr1,expr2);
             
         }else if(strcmp(node->token->val, "Not")==0){
-            printf("xor i1 %s, true\n",type_to_llvm(node->value_type),expr1,expr2);
+            printf("xor i1 %s, true\n",expr1);
         }
 
         *count++;
         return tmp;
     }else if(node->type == id){
-        printf("%%.%s = load %s, %s* %%%s",tmp,type_to_llvm(node),type_to_llvm(node),node->token->val);
+        if(node->is_global)
+          printf("%%.%s = load %s, %s* @%s",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
+        else
+            printf("%%.%s = load %s, %s* %%%s",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
         *count++;
         return tmp;  
     }else{
@@ -238,6 +252,4 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
 Strlit -> Aloc.. push da string la para dentro e imprime
 OU
 tabela de ponteiros para por global mais tarde.. <- Mais complexo mas melhor em casos recursivos
-
-
 */
