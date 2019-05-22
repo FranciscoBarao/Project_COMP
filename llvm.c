@@ -190,10 +190,22 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
                 label_end = *count_label = *count_label+1;
                 printf("br i1 %s, label %%label%d, label %%label%d\n",expr,label_true,label_false);
                 printf("label%d:\n",label_true);
-                printf("true\n");
+                // true
+                char* text_true = (char*) malloc(sizeof(char)*50);
+                sprintf(text_true,".%d",*count);
+                *count = *count + 1;
+                printf("@.str_format = private unnamed_addr constant [6 x i8] c\"true\\0A\\00\"");
+                printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0", text_true);
+                printf("call i32 (i8*, ...) @printf(i8* %s)", text_true);
                 printf("br label label%d\n",label_end);
                 printf("label%d:\n",label_false);
-                printf("false\n");
+                // false
+                char* text_false = (char*) malloc(sizeof(char)*50);
+                sprintf(text_false,".%d",*count);
+                *count = *count + 1;
+                printf("@.str_format = private unnamed_addr constant [6 x i8] c\"true\\0A\\00\"");
+                printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0", text_false);
+                printf("call i32 (i8*, ...) @printf(i8* %s)", text_false);
                 printf("br label label%d\n",label_end);
                 printf("label%d:\n",label_end);
                 return 0;
