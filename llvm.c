@@ -31,6 +31,9 @@ int produce(Structure *node, char* scope_name,int* count_label, int* count ,int 
             needs_return = produce_statement(node, scope_name, count_label, count);
             needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return);  
             break;
+        case ParseArgs:
+            produce_parse_args(node, scope_name, count);
+            break;
         default :
             needs_return = produce(tmp->child, scope_name, count_label, count, needs_return);
             needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return);  
@@ -294,8 +297,17 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
         return tmp;  
     }else{
         //casos primitivos, retorna valor || ex : add var , '2' <--
+        if(node->token->val[0] == '.'){
+            char *float_str = (char *)malloc(sizeof(char) * 100);
+            sprintf(float_str, "0%s", node->token->val);
+            return float_str;
+        } 
         return node->token->val;
     }
+}
+
+void produce_parse_args(Structure *node, char* scope_name, int* count){
+    
 }
 
 

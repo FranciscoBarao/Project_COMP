@@ -10,4 +10,5 @@ void produce_declarations(char* scope_name);
 int produce_statement(Structure* node, char* scope_name, int* count_label,int* count);
 void produce_assign(Structure* node, char* scope_name,int* count);
 char* produce_expression(Structure* node, char* scope_name, int* count);
+void produce_parse_args(Structure *node, char* scope_name, int* count);
 
