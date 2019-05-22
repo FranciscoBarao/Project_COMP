@@ -380,7 +380,7 @@ int check_error_expression(Structure *node, basic_type child_type, basic_type br
             return -1;
         }
     }else{
-        if((child_type == integer || child_type == float32) && (brother_type == integer || brother_type == float32)){
+        if((child_type == integer && brother_type == integer) || (child_type == float32 && brother_type == float32)){
             return 0;
         }else{
             return -1;
