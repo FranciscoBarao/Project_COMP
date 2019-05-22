@@ -105,19 +105,20 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
     char* expr = (char*) malloc(sizeof(char)*50);
 
     int label_true,label_false,label_end;
+    int label_condition, label_block;
 
     if(strcmp(node->token->val, "If")==0) {
         expr = produce_expression(node->child,scope_name,count);
 
         if(node->child->brother->brother->child != NULL){
             label_true = *count_label;
-            label_false = *count_label++ ;
-            label_end = *count_label++;
+            label_false = *count_label = *count_label+1;
+            label_end = *count_label = *count_label+1;
 
         printf("br i1 %%%s, label %%label%d, label %%label%d\n",expr,label_true,label_false);
         }else{
             label_true = *count_label;
-            label_end = *count_label++;
+            label_end = *count_label = *count_label+1;
         
         printf("br i1 %%%s, label %%label%d, label %%label%d\n",expr,label_true,label_end);
         }
@@ -131,6 +132,34 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
         }
 
     }else if(strcmp(node->token->val, "For")==0){
+        if(strcmp(node->child->token->val,"Block") != 0){
+            label_condition = *count_label;
+            label_block = *count_label = *count_label+1; 
+            label_end = *count_label = *count_label+1;
+            
+            printf("br label %%label%d\n",label_condition);
+            printf("label%d:\n",label_condition);
+            expr = produce_expression(node->child,scope_name,count);
+            printf("br i1 %%%s, label %%label%d, label %%label%d\n",expr,label_block,label_end);
+            
+            printf("label%d:\n",label_block);
+            produce(node->child->brother->child,scope_name,count_label,count, 0);
+            printf("label%d:\n",label_condition);
+
+        }else{
+            label_block = *count_label;
+            label_end = *count_label = *count_label+1;
+            printf("br label %%label%d\n",label_block);
+            
+            printf("label%d:\n",label_block);
+            produce(node->child->child,scope_name,count_label,count, 0);
+            printf("br label %%label%d\n",label_block);
+        }
+        printf("label%d:\n",label_end);
+
+        
+
+        
         
 
     }else if(strcmp(node->token->val, "Return")==0){
