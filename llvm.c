@@ -184,6 +184,20 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
         case string:
                 printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"");
             break;
+        case boolean:
+                label_true = *count_label;
+                label_false = *count_label = *count_label+1;
+                label_end = *count_label = *count_label+1;
+                printf("br i1 %s, label %%label%d, label %%label%d\n",expr,label_true,label_false);
+                printf("label%d:\n",label_true);
+                printf("true\n");
+                printf("br label label%d\n",label_end);
+                printf("label%d:\n",label_false);
+                printf("false\n");
+                printf("br label label%d\n",label_end);
+                printf("label%d:\n",label_end);
+                return 0;
+            break;
         default:
                 printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"");
             break;
