@@ -21,6 +21,7 @@ int produce(Structure *node, char* scope_name,int* count_label, int* count ,int 
             produce_header(tmp->child->child, tmp->child->child->token->val);
             produce_declarations(tmp->child->child->token->val);
             *count = 0;
+            *count_label = 0;
             needs_return = 0;
             int n_return = produce(tmp->child, tmp->child->child->token->val, count_label, count, 0);
             if(n_return==0) printf("ret void\n");
@@ -299,23 +300,46 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
         
 
         else if(strcmp(node->token->val, "Lt")==0){
-            printf("icmp slt %s %s %s\n", type_to_llvm(node->value_type), expr1, expr2);
-
+            if(node->child->value_type == float32){
+                printf("fcmp slt double %s %s\n", expr1, expr2);
+            }else{
+                printf("icmp slt %s %s %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
+            }
+            
         }else if(strcmp(node->token->val, "Gt")==0){
-            printf("icmp sgt %s %s %s\n", type_to_llvm(node->value_type), expr1, expr2);
+             if(node->child->value_type == float32){
+                printf("fcmp sgt double %s %s\n", expr1, expr2);
+            }else{
+                printf("icmp sgt %s %s %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
+            }
 
         }else if(strcmp(node->token->val, "Le")==0){
-            printf("icmp sle %s %s %s\n", type_to_llvm(node->value_type), expr1, expr2);
+             if(node->child->value_type == float32){
+                printf("fcmp sle double %s %s\n", expr1, expr2);
+            }else{
+                printf("icmp sle %s %s %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
+            }
 
         }else if(strcmp(node->token->val, "Ge")==0){
-            printf("icmp sge %s %s %s\n", type_to_llvm(node->value_type), expr1, expr2);
+             if(node->child->value_type == float32){
+                printf("fcmp sge double %s %s\n", expr1, expr2);
+            }else{
+                printf("icmp sge %s %s %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
+            }
 
         }else if(strcmp(node->token->val, "Eq")==0){
-            printf("icmp eq %s %s %s\n", type_to_llvm(node->value_type), expr1, expr2);
+             if(node->child->value_type == float32){
+                printf("fcmp eq double %s %s\n", expr1, expr2);
+            }else{
+                printf("icmp eq %s %s %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
+            }
 
         }else if(strcmp(node->token->val, "Ne")==0){
-            printf("icmp ne %s %s %s\n", type_to_llvm(node->value_type), expr1, expr2);
-
+             if(node->child->value_type == float32){
+                printf("fcmp ne double %s %s\n", expr1, expr2);
+            }else{
+                printf("icmp ne %s %s %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
+            }
         }
          
         else if(strcmp(node->token->val, "And")==0){
