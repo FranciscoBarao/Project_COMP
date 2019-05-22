@@ -29,9 +29,11 @@ int produce(Structure *node, char* scope_name,int* count_label, int* count ,int 
             break;
         case Statement:
             needs_return = produce_statement(node, scope_name, count_label, count);
+            needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return);  
             break;
         case ParseArgs:
             produce_parse_args(node, scope_name, count);
+            needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return);  
             break;
         default :
             needs_return = produce(tmp->child, scope_name, count_label, count, needs_return);
