@@ -168,6 +168,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
         }
         printf("label%d:\n",label_end);
 
+
     }else if(strcmp(node->token->val, "For")==0){
         if(strcmp(node->child->token->val,"Block") != 0){
             label_condition = *count_label;
@@ -181,7 +182,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
             
             printf("label%d:\n",label_block);
             produce(node->child->brother->child,scope_name,count_label, count, count_str, 0, pointer);
-            printf("label%d:\n",label_condition);
+            printf("br label %%label%d\n",label_condition);
 
         }else{
             label_block = *count_label;
@@ -309,33 +310,57 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
     }
 
     sprintf(tmp,"%%.%d",*count); //var name is %Count
-
     if(node->type == Expression){
         printf("%s = ",tmp);
-        if(node->value_type == float32){
-            printf("f");
-        }
-
         if(strcmp(node->token->val, "Add")==0){ 
-            printf("add %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            if(node->child->value_type == float32){
+                printf("fadd %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            }else{
+                printf("add %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            }
 
         }else if(strcmp(node->token->val, "Sub")==0){
-            printf("sub %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            if(node->child->value_type == float32){
+                printf("fsub %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            }else{
+                printf("sub %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            }
 
         }else if(strcmp(node->token->val, "Mul")==0){
-            printf("mul %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            if(node->child->value_type == float32){
+               printf("fmul %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            }else{
+                printf("mul %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            }
 
         }else if(strcmp(node->token->val, "Div")==0){
-            printf("sdiv %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            if(node->child->value_type == float32){
+                printf("fdiv %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            }else{
+                printf("sdiv %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);
+            }
 
         }else if(strcmp(node->token->val, "Mod")==0){
-            printf("srem %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);   
+            if(node->child->value_type == float32){
+                printf("frem %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);   
+            }else{
+                printf("srem %s %s, %s\n",type_to_llvm(node->value_type),expr1,expr2);   
+            }
 
         }else if(strcmp(node->token->val, "Minus")==0){
+            if(node->child->value_type == float32){
+               printf("fsub %s 0, %s\n",type_to_llvm(node->value_type),expr1);   
+            }else{
+                printf("sub %s 0, %s\n",type_to_llvm(node->value_type),expr1);   
+            }
             printf("sub %s 0, %s\n",type_to_llvm(node->value_type),expr1);   
 
         }else if(strcmp(node->token->val, "Plus")==0){
-            printf("add %s 0, %s\n",type_to_llvm(node->value_type),expr1);   
+            if(node->child->value_type == float32){
+                printf("fadd %s 0, %s\n",type_to_llvm(node->value_type),expr1);   
+            }else{
+                printf("add %s 0, %s\n",type_to_llvm(node->value_type),expr1);   
+            }
         }
         
 
