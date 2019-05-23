@@ -139,7 +139,6 @@ void produce_declarations(char* scope_name){
 
 }
 
-
 int produce_statement(Structure* node, char* scope_name, int* count_label,int* count){
     char* expr = (char*) malloc(sizeof(char)*50);
 
@@ -257,7 +256,7 @@ void produce_assign(Structure* node, char* scope_name,int* count){
     else
         printf("store %s %s, %s* %%%s\n",type_to_llvm(node->value_type),expr,type_to_llvm(node->value_type),node->child->token->val);
     return;
-  }
+}
 
 char* produce_expression(Structure* node, char* scope_name, int* count){
     char* expr1 = (char*) malloc(sizeof(char)*30);
@@ -386,7 +385,6 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
         if(node->is_global){
             printf("%s = load %s, %s* @%s\n",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
         }else{
-            printf("\n%s\n",type_to_llvm(node->value_type));
             printf("%s = load %s, %s* %%%s\n",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
         }
         *count = *count+1;
