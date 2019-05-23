@@ -3,7 +3,7 @@
 YACCFLAGS = -v -g 
 
 
-all: compile_yacc compile_main 
+all: compile_yacc compile_main run_test
 
 compile_lex: Meta1/gocompiler.l lex.yy.c
 		lex Meta1/gocompiler.l
@@ -26,8 +26,14 @@ make_llvm: Test.c
 
 
 run: 
-		./main -s
+		./main -s < Test > output.ll
+
 run_test:
-		./main < Test > output
+		./main < Test > output.ll
+
+run_lli:	output.ll
+		clang-3.9 -o output output.s
+		lli-3.9 output.ll 2
+
 clean: 
 		rm -rf *o main

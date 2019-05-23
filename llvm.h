@@ -11,4 +11,5 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
 void produce_assign(Structure* node, char* scope_name,int* count);
 char* produce_expression(Structure* node, char* scope_name, int* count);
 void produce_parse_args(Structure *node, char* scope_name, int* count);
+void init_produce();
 

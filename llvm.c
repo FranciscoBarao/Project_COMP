@@ -6,9 +6,11 @@
 #include <string.h>
 //Clang 3.8.1 -> segfaults appear on llvm
 
+//Void on factorial.. should be i32
+//store i32 .5 i32* %.0 -> should be %argument
+//%.0 = load void, void* %argument -> should be i32, i32*
+
 int produce(Structure *node, char* scope_name,int* count_label, int* count ,int needs_return){
-    //NAO ESQUECER
-    //   --> produce_declarations("global");
 
     if(node == NULL) return needs_return;
     Structure* tmp = node;
@@ -46,23 +48,30 @@ int produce(Structure *node, char* scope_name,int* count_label, int* count ,int 
 
 const char* type_to_llvm(basic_type t){
     switch(t) {
+        case function:
+            return "FUNCTION";
+        case undef:
+            return "NONE";
         case boolean:
             return "i1";
         case float32:
             return "double";
         case string:
             return "i8*";
-        default:
+        case integer:
             return "i32";
+        default:
+            return "void";
     }
 }
 
 
 void produce_header(Structure* node, char* scope_name){
     if(strcmp(node->token->val,"main")==0){
-        printf("define %s @main(i32, i8**) {\n",type_to_llvm(node->brother->value_type));
+        printf("define %s @main(i32, i8**) {\n",type_to_llvm(val_to_basic(node->brother->token->val)));
     }else{
-        printf("define %s @%s(",type_to_llvm(node->brother->value_type),node->token->val);
+
+        printf("define %s @%s(",type_to_llvm(val_to_basic(node->brother->token->val)),node->token->val);
         Scope_element* scope = get_scope(scope_name);
         Table_element* aux = NULL;
         if (scope != NULL){
@@ -154,11 +163,11 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
         }
         printf("label%d:\n",label_true);
         produce(node->child->brother->child,scope_name,count_label,count, 0);
-        printf("br label label%d\n",label_end);
+        printf("br label %%label%d\n",label_end);
         if(node->child->brother->brother->child != NULL){
             printf("label%d:\n",label_false);
             produce(node->child->brother->brother->child,scope_name,count_label,count, 0);
-            printf("br label label%d\n",label_end);
+            printf("br label %%label%d\n",label_end);
         }
         printf("label%d:\n",label_end);
 
@@ -197,51 +206,45 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
         return 1;
     }else if(strcmp(node->token->val, "Print")==0){
         expr = produce_expression(node->child,scope_name,count);
-        switch (node->child->value_type){
-        case integer:
-                printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%d\\0A\\00\"\n");
-            break;
-        case float32:
-                printf("@.str_format = private unnamed_addr constant [4 x i8] c\".08f\\0A\\00\"\n");
-            break;
-        case string:
-                printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"\n");
-            break;
-        case boolean:
-                label_true = *count_label;
-                label_false = *count_label = *count_label+1;
-                label_end = *count_label = *count_label+1;
-                printf("br i1 %s, label %%label%d, label %%label%d\n",expr,label_true,label_false);
-                printf("label%d:\n",label_true);
-                // true
-                char* text_true = (char*) malloc(sizeof(char)*50);
-                sprintf(text_true,".%d",*count);
-                *count = *count + 1;
-                printf("@.str_format = private unnamed_addr constant [6 x i8] c\"true\\0A\\00\"\n");
-                printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0\n", text_true);
-                printf("call i32 (i8*, ...) @printf(i8* %s)\n", text_true);
-                printf("br label label%d\n",label_end);
-                printf("label%d:\n",label_false);
-                // false
-                char* text_false = (char*) malloc(sizeof(char)*50);
-                sprintf(text_false,".%d",*count);
-                *count = *count + 1;
-                printf("@.str_format = private unnamed_addr constant [6 x i8] c\"true\\0A\\00\"\n");
-                printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0\n", text_false);
-                printf("call i32 (i8*, ...) @printf(i8* %s)\n", text_false);
-                printf("br label label%d\n",label_end);
-                printf("label%d:\n",label_end);
-                return 0;
-            break;
-        default:
-                printf("@.str_format = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"\n");
-            break;
+        if(node->child->value_type == boolean){
+            label_true = *count_label;
+            label_false = *count_label = *count_label+1;
+            label_end = *count_label = *count_label+1;
+            printf("br i1 %s, label %%label%d, label %%label%d\n",expr,label_true,label_false);
+            printf("label%d:\n",label_true);
+            // true
+            char* text_true = (char*) malloc(sizeof(char)*50);
+            sprintf(text_true,"%%.%d",*count);
+            *count = *count + 1;
+            printf("%s = getelementptr [4 x i8], [4 x i8]* @.true, i64 0, i64 0\n", text_true);
+            printf("call i32 (i8*, ...) @printf(i8* %s)\n", text_true);
+            printf("br label %%label%d\n",label_end);
+            printf("label%d:\n",label_false);
+            // false
+            char* text_false = (char*) malloc(sizeof(char)*50);
+            sprintf(text_false,"%%.%d",*count);
+            *count = *count + 1;
+            printf("%s = getelementptr [4 x i8], [4 x i8]* @.false, i64 0, i64 0\n", text_false);
+            printf("call i32 (i8*, ...) @printf(i8* %s)\n", text_false);
+            printf("br label %%label%d\n",label_end);
+            printf("label%d:\n",label_end);
+            return 0;
         }
-        char* str_format = (char*) malloc(sizeof(char)*50);
-        sprintf(str_format,".%d",*count);
+        char* str = (char*) malloc(sizeof(char)*50);
+        sprintf(str,"%%.%d",*count);
         *count = *count + 1;
-        printf("%s = getelementptr [4 x i8], [4 x i8]* @str_format, i64 0, i64 0\n", str_format);
-        printf("call i32 (i8*, ...) @printf(i8* %s, %s %s)\n", str_format, type_to_llvm(node->child->value_type), expr);
+        switch (node->child->value_type){
+            case integer:
+                    printf("%s = getelementptr [4 x i8], [4 x i8]* @.integer, i64 0, i64 0\n", str);
+                break;
+            case float32:
+                    printf("%s = getelementptr [4 x i8], [4 x i8]* @.float, i64 0, i64 0\n", str);
+                break;
+            case string:
+                    printf("%s = getelementptr [4 x i8], [4 x i8]* @.string, i64 0, i64 0\n", str);
+                break;
+        }
+        printf("call i32 (i8*, ...) @printf(i8* %s, %s %s)\n", str, type_to_llvm(node->child->value_type), expr);
     }
     return 0;
 }
@@ -267,7 +270,6 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
     if(node->type == Block){
         return "";
     }else if(node->type == Call){
-    
         
        if(node->child->brother == NULL) sprintf(str+strlen(str),")\n");
         for(Structure* ptr = node->child->brother;ptr != NULL;ptr = ptr->brother){
@@ -329,42 +331,42 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
             if(node->child->value_type == float32){
                 printf("fcmp slt double %s %s\n", expr1, expr2);
             }else{
-                printf("icmp slt %s %s %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
+                printf("icmp slt %s %s, %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
             }
             
         }else if(strcmp(node->token->val, "Gt")==0){
              if(node->child->value_type == float32){
-                printf("fcmp sgt double %s %s\n", expr1, expr2);
+                printf("fcmp sgt double %s, %s\n", expr1, expr2);
             }else{
-                printf("icmp sgt %s %s %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
+                printf("icmp sgt %s %s, %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
             }
 
         }else if(strcmp(node->token->val, "Le")==0){
              if(node->child->value_type == float32){
-                printf("fcmp sle double %s %s\n", expr1, expr2);
+                printf("fcmp sle double %s, %s\n", expr1, expr2);
             }else{
-                printf("icmp sle %s %s %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
+                printf("icmp sle %s %s, %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
             }
 
         }else if(strcmp(node->token->val, "Ge")==0){
              if(node->child->value_type == float32){
-                printf("fcmp sge double %s %s\n", expr1, expr2);
+                printf("fcmp sge double %s, %s\n", expr1, expr2);
             }else{
-                printf("icmp sge %s %s %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
+                printf("icmp sge %s %s, %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
             }
 
         }else if(strcmp(node->token->val, "Eq")==0){
              if(node->child->value_type == float32){
-                printf("fcmp eq double %s %s\n", expr1, expr2);
+                printf("fcmp eq double %s, %s\n", expr1, expr2);
             }else{
-                printf("icmp eq %s %s %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
+                printf("icmp eq %s %s, %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
             }
 
         }else if(strcmp(node->token->val, "Ne")==0){
              if(node->child->value_type == float32){
-                printf("fcmp ne double %s %s\n", expr1, expr2);
+                printf("fcmp ne double %s, %s\n", expr1, expr2);
             }else{
-                printf("icmp ne %s %s %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
+                printf("icmp ne %s %s, %s\n", type_to_llvm(node->child->value_type), expr1, expr2);
             }
         }
          
@@ -384,6 +386,7 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
         if(node->is_global){
             printf("%s = load %s, %s* @%s\n",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
         }else{
+            printf("\n%s\n",type_to_llvm(node->value_type));
             printf("%s = load %s, %s* %%%s\n",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
         }
         *count = *count+1;
@@ -446,4 +449,12 @@ void produce_parse_args(Structure *node, char* scope_name, int* count){
     printf("store i32 %s, i32* %s\n", tmp5, expr);
 }
 
-
+void init_produce(){
+    printf("declare i32 @printf(i8*, ...)\n");
+    printf("declare i32 @atoi(i8*)\n");
+    printf("@.true = private unnamed_addr constant [6 x i8] c\"true\\0A\\00\"\n");
+    printf("@.false = private unnamed_addr constant [7 x i8] c\"false\\0A\\00\"\n");
+    printf("@.integer = private unnamed_addr constant [4 x i8] c\"%%d\\0A\\00\"\n");
+    printf("@.string = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"\n");
+    printf("@.float = private unnamed_addr constant [6 x i8] c\".08f\\0A\\00\"\n");
+}
