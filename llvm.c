@@ -418,7 +418,32 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
 }
 
 void produce_parse_args(Structure *node, char* scope_name, int* count){
-    
+    char* expr = (char*) malloc(sizeof(char)*150);
+    expr = produce_expression(node->child, scope_name, count);
+    char* expr_brother = (char*) malloc(sizeof(char)*150);
+    expr_brother = produce_expression(node->child->brother, scope_name, count);
+    char* tmp = (char*) malloc(sizeof(char)*30);
+    sprintf(tmp,"%%.%d",*count);
+    *count = *count + 1;
+    printf("%s = alloca i8**\n", tmp);
+    printf("store i8** %%1, i8*** %s\n", tmp);
+    char* tmp2 = (char*) malloc(sizeof(char)*30);
+    sprintf(tmp2,"%%.%d",*count);
+    *count = *count + 1;
+    printf("%s = load i8**, i8*** %s\n", tmp2, tmp);
+    char* tmp3 = (char*) malloc(sizeof(char)*30);
+    sprintf(tmp3,"%%.%d",*count);
+    *count = *count + 1;
+    printf("%s = getelementptr inbounds i8*, i8** %s, i64 %s\n", tmp3, tmp2, expr_brother);
+    char* tmp4 = (char*) malloc(sizeof(char)*30);
+    sprintf(tmp4,"%%.%d",*count);
+    *count = *count + 1;
+    printf("%s = load i8*, i8** %s\n", tmp4, tmp3);
+    char* tmp5 = (char*) malloc(sizeof(char)*30);
+    sprintf(tmp5,"%%.%d",*count);
+    *count = *count + 1;
+    printf("%s = call i32 @atoi(i8* %s)\n", tmp5, tmp4);
+    printf("store i32 %s, i32* %s\n", tmp5, expr);
 }
 
 
