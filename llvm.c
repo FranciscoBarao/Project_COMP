@@ -59,20 +59,24 @@ const char* type_to_llvm(basic_type t){
 
 
 void produce_header(Structure* node, char* scope_name){
-    printf("define %s @%s(",type_to_llvm(node->brother->value_type),node->token->val);
-    Scope_element* scope = get_scope(scope_name);
-    Table_element* aux = NULL;
-    if (scope != NULL){
-        aux = scope->variables;
-        for(int i=0; i<scope->number_of_params;i++){
-            printf("%s, ",type_to_llvm(aux->type));
-            aux = aux->next;
-        }
-    }
-    if(scope->number_of_params > 0){
-        printf("\b\b) {\n");
+    if(strcmp(node->token->val,"main")==0){
+        printf("define %s @main(i32, i8**) {\n",type_to_llvm(node->brother->value_type));
     }else{
-        printf(") {\n");
+        printf("define %s @%s(",type_to_llvm(node->brother->value_type),node->token->val);
+        Scope_element* scope = get_scope(scope_name);
+        Table_element* aux = NULL;
+        if (scope != NULL){
+            aux = scope->variables;
+            for(int i=0; i<scope->number_of_params;i++){
+                if(i == scope->number_of_params-1){
+                    printf("%s) {\n",type_to_llvm(aux->type));
+                }else{
+                    printf("%s, ",type_to_llvm(aux->type));
+                    aux = aux->next;
+                }
+            }
+        }
+        if(scope->number_of_params == 0) printf(") {\n");
     }
 }
 

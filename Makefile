@@ -28,6 +28,6 @@ make_llvm: Test.c
 run: 
 		./main -s
 run_test:
-		./main < Test
+		./main < Test > output
 clean: 
 		rm -rf *o main
