@@ -196,7 +196,7 @@ int check_function_invocation(Structure* node ,char* scope_name){
 basic_type check_parseArgs(Structure* node ,char* scope_name){
     Table_element* id;
     Special_element *aux;
-    if(node->is_global == 1){
+    if(node->child->is_global == 1){
         aux = search_variable("global", node->child->token->val);
     }else{
         aux = search_variable(scope_name, node->child->token->val);
@@ -207,6 +207,7 @@ basic_type check_parseArgs(Structure* node ,char* scope_name){
         basic_type temp = check_expression(node->child->brother,scope_name);
         //Int  -> Atoi (args[int])
         if(id->type == integer && temp == integer){
+            node->value_type = integer;
             return integer;
         } 
         else{
@@ -290,6 +291,7 @@ int check_variable(Structure* node ,char* scope_name, char *str, basic_type t){
         sprintf(node->error, "Line %d, column %d: Symbol %s already defined\n",node->token->l,node->token->col,node->token->val);
         return -1;
     }else{
+        node->value_type = t;
         if(strcmp(scope_name, "global") == 0){
             new->is_used = 1;
         }
