@@ -231,7 +231,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
             char* text_true = (char*) malloc(sizeof(char)*50);
             sprintf(text_true,"%%.%d",*count);
             *count = *count + 1;
-            printf("%s = getelementptr [4 x i8], [4 x i8]* @.true,  i32 0,  i32 0\n", text_true);
+            printf("%s = getelementptr [6 x i8], [6 x i8]* @.true,  i32 0,  i32 0\n", text_true);
             printf("call i32 (i8*, ...) @printf(i8* %s)\n", text_true);
             printf("br label %%label%d\n",label_end);
             printf("label%d:\n",label_false);
@@ -239,7 +239,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
             char* text_false = (char*) malloc(sizeof(char)*50);
             sprintf(text_false,"%%.%d",*count);
             *count = *count + 1;
-            printf("%s = getelementptr [4 x i8], [4 x i8]* @.false,  i32 0,  i32 0\n", text_false);
+            printf("%s = getelementptr [7 x i8], [7 x i8]* @.false,  i32 0,  i32 0\n", text_false);
             printf("call i32 (i8*, ...) @printf(i8* %s)\n", text_false);
             printf("br label %%label%d\n",label_end);
             printf("label%d:\n",label_end);
@@ -253,7 +253,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
                     printf("%s = getelementptr [4 x i8], [4 x i8]* @.integer,  i32 0,  i32 0\n", str);
                 break;
             case float32:
-                    printf("%s = getelementptr [6 x i8], [6 x i8]* @.float,  i32 0,  i32 0\n", str);
+                    printf("%s = getelementptr [7 x i8], [7 x i8]* @.float,  i32 0,  i32 0\n", str);
                 break;
             case string:
                     printf("%s = getelementptr [4 x i8], [4 x i8]* @.string,  i32 0,  i32 0\n", str);
@@ -271,7 +271,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
 void produce_assign(Structure* node, char* scope_name,int* count){
     char* expr = (char*) malloc(sizeof(char)*50);
     expr = produce_expression(node->child->brother,scope_name,count);
-    if(node->is_global)
+    if(node->child->is_global == 1)
         printf("store %s %s, %s* @%s\n",type_to_llvm(node->value_type),expr,type_to_llvm(node->value_type),node->child->token->val);
     else
         printf("store %s %s, %s* %%%s\n",type_to_llvm(node->value_type),expr,type_to_llvm(node->value_type),node->child->token->val);
@@ -425,7 +425,7 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
         *count = *count+1;
         return tmp;
     }else if(node->type == id){
-        if(node->is_global){
+        if(node->is_global==1){
             printf("%s = load %s, %s* @%s\n",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
         }else{
             printf("%s = load %s, %s* %%%s\n",tmp,type_to_llvm(node->value_type),type_to_llvm(node->value_type),node->token->val);
@@ -503,7 +503,7 @@ void init_produce(Structure *node, int* count_str){
     printf("@.false = private unnamed_addr constant [7 x i8] c\"false\\0A\\00\"\n");
     printf("@.integer = private unnamed_addr constant [4 x i8] c\"%%d\\0A\\00\"\n");
     printf("@.string = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"\n");
-    printf("@.float = private unnamed_addr constant [6 x i8] c\".08f\\0A\\00\"\n");
+    printf("@.float = private unnamed_addr constant [7 x i8] c\"%%.08f\\0A\\00\"\n");
     Str_meta4 *pointer = (Str_meta4*)malloc(sizeof(Str_meta4));
     change_str(node, pointer, count_str);
     Str_meta4 *aux = pointer->next;
@@ -518,11 +518,13 @@ void change_str(Structure* node, Str_meta4 *pointer, int* count_str){
     if(node->type == Statement){
         if(strcmp(node->token->val, "Print")==0){
             if(node->child->type == strlit){
+                int random_stuff = 0;
                 int str_size = strlen(node->child->token->val);
                 char* str_final = (char*) malloc(sizeof(char)*200);
                 int j=0;
                 for(int i=0; i<str_size-1; i++){
                     if(node->child->token->val[i] == '\\' ){
+                        str_final[j] = node->child->token->val[i];
                         switch (node->child->token->val[i+1]){
                         case 'f':
                             str_final[++j] = '0';
@@ -551,18 +553,24 @@ void change_str(Structure* node, Str_meta4 *pointer, int* count_str){
                         default:
                             break;
                         }
+                        random_stuff += 1;
+                        i = i + 1;
+                    }else if(node->child->token->val[i] == '%'){
+                        str_final[j] = node->child->token->val[i];
+                        str_final[++j] = '%';
+                        random_stuff -= 1;
                     }else
                     {
                         str_final[j] = node->child->token->val[i];
                     }
                     j += 1;   
                 }
-                str_final[j+1] = '\0';
+                str_final[j] = '\0';
                 Str_meta4* new = (Str_meta4*) malloc(sizeof(Str_meta4));
                 char* aux = (char*) malloc(sizeof(char)*50);
                 sprintf(aux,"@.str%d",*count_str);
                 *count_str = *count_str + 1;
-                sprintf(new->text, "%s = private unnamed_addr constant [%d x i8] c%s\\0A\\00\"\n",aux,(int) strlen(str_final)+1,str_final);
+                sprintf(new->text, "%s = private unnamed_addr constant [%d x i8] c%s\\0A\\00\"\n",aux,str_size-random_stuff,str_final);
                 new->next = NULL;
                 Str_meta4* new2 = pointer;
                 while(new2->next != NULL){
@@ -570,7 +578,7 @@ void change_str(Structure* node, Str_meta4 *pointer, int* count_str){
                 }
                 new2->next = new;
                 strcpy(node->child->token->val, aux);
-                node->child->is_global = (int) strlen(str_final)+1;
+                node->child->is_global = str_size-random_stuff;
             }
         }else{
             change_str(node->child, pointer, count_str);
