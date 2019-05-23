@@ -91,7 +91,23 @@ void produce_declarations(char* scope_name){
         for(aux=symbol_table; aux; aux=aux->next){
             if(strcmp(scope_name, "global")==0){
                 if(aux->type != function)
-                    printf("@%s = global %s\n",aux->name,type_to_llvm(aux->type));
+                    printf("@%s = global %s ",aux->name,type_to_llvm(aux->type));
+                    switch(aux->type){
+                        case integer:
+                        printf("0\n");
+                        break;
+                        case boolean:
+                        printf("0\n");
+                        break;
+                        case string:
+                        printf("null\n");
+                        break;
+                        case float32:
+                        printf("0.0\n");
+                        break;
+                        default:
+                        break;
+                    }
             }else{
                 if(aux->type != function){
                     if(index<scope->number_of_params){
@@ -237,26 +253,32 @@ void produce_assign(Structure* node, char* scope_name,int* count){
   }
 
 char* produce_expression(Structure* node, char* scope_name, int* count){
-    char* expr1 = (char*) malloc(sizeof(char)*150);
-    char* expr2 = (char*) malloc(sizeof(char)*150);
+    char* expr1 = (char*) malloc(sizeof(char)*30);
+    char* expr2 = (char*) malloc(sizeof(char)*30);
 
-    char* tmp = (char*) malloc(sizeof(char)*150);
+    char* tmp = (char*) malloc(sizeof(char)*30);
+
+    char* str = (char*) malloc(sizeof(char)*100);
 
     if(node->type == Block){
         return "";
     }else if(node->type == Call){
-        sprintf(tmp,"%%.%d",*count);
-        printf("%s = call %s @%s(",tmp,type_to_llvm(node->value_type),node->child->token->val);
-        if(node->child->brother == NULL) printf(")\n");
+    
+        
+       if(node->child->brother == NULL) sprintf(str+strlen(str),")\n");
         for(Structure* ptr = node->child->brother;ptr != NULL;ptr = ptr->brother){
+            char* expr = produce_expression(ptr, scope_name, count);
             if(ptr->brother == NULL){
-                char* expr = produce_expression(ptr, scope_name, count);
-                printf("%s %s)\n",type_to_llvm(ptr->value_type),expr);
+                sprintf(str+strlen(str),"%s %s)\n",type_to_llvm(ptr->value_type),expr);
             }else{
-                char* expr = produce_expression(ptr, scope_name, count);
-                printf("%s %s, ",type_to_llvm(ptr->value_type),expr);
+                sprintf(str+strlen(str),"%s %s, ",type_to_llvm(ptr->value_type),expr);
             }
         }   
+
+        sprintf(tmp,"%%.%d",*count);
+        printf("%s = call %s @%s(%s",tmp,type_to_llvm(node->value_type),node->child->token->val,str);
+        
+
         *count = *count + 1;
         return tmp;
     }
@@ -385,9 +407,3 @@ void produce_parse_args(Structure *node, char* scope_name, int* count){
 }
 
 
-/*
-Strlit -> Aloc.. push da s        *count = *count+1;
-tring la para dentro e imprime
-OU
-tabela de ponteiros para por global mais tarde.. <- Mais complexo mas melhor em casos recursivos
-*/
