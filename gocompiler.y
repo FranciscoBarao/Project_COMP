@@ -448,15 +448,9 @@ int main(int argc, char* argv[]){
         if(semantic_error < 0){
             print_error_tree(myprogram);
         }else{
-            init_produce();
+            init_produce(myprogram, &(int){0});
             produce_declarations("global");
-            Str_meta4* pointer = (Str_meta4*) malloc(sizeof(Str_meta4));
             produce(myprogram,"global",&(int){0},&(int){0}, &(int){0},0,pointer);
-            Str_meta4 *aux = pointer->next;
-            while(aux != NULL){
-                printf("%s", aux->text);
-                aux = aux->next;
-            }
             free_tree(myprogram);
         }
     }

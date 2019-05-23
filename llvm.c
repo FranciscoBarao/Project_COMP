@@ -10,14 +10,14 @@
 //store i32 .5 i32* %.0 -> should be %argument
 //%.0 = load void, void* %argument -> should be i32, i32*
 
-int produce(Structure *node, char* scope_name,int* count_label, int* count, int* count_str ,int needs_return, Str_meta4* pointer){
+int produce(Structure *node, char* scope_name,int* count_label, int* count, int needs_return, Str_meta4* pointer){
 
     if(node == NULL) return needs_return;
     Structure* tmp = node;
     switch(tmp->type) {
         case Assign:
             produce_assign(tmp, scope_name,count);
-            needs_return = produce(tmp->brother, scope_name, count_label, count, count_str, needs_return, pointer);
+            needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return, pointer);
             break;
         case FuncDecl:
             produce_header(tmp->child->child, tmp->child->child->token->val);
@@ -25,22 +25,22 @@ int produce(Structure *node, char* scope_name,int* count_label, int* count, int*
             *count = 0;
             *count_label = 0;
             needs_return = 0;
-            int n_return = produce(tmp->child, tmp->child->child->token->val, count_label, count, count_str, 0, pointer);
+            int n_return = produce(tmp->child, tmp->child->child->token->val, count_label, count, 0, pointer);
             if(n_return==0) printf("ret void\n");
             printf("}\n");
-            produce(tmp->brother, scope_name, count_label, count, count_str, needs_return, pointer);
+            produce(tmp->brother, scope_name, count_label, count, needs_return, pointer);
             break;
         case Statement:
-            needs_return = produce_statement(node, scope_name, count_label, count, count_str, pointer);
-            needs_return = produce(tmp->brother, scope_name, count_label, count, count_str, needs_return, pointer);  
+            needs_return = produce_statement(node, scope_name, count_label, count, pointer);
+            needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return, pointer);  
             break;
         case ParseArgs:
             produce_parse_args(node, scope_name, count);
-            needs_return = produce(tmp->brother, scope_name, count_label, count, count_str, needs_return, pointer);  
+            needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return, pointer);  
             break;
         default :
-            needs_return = produce(tmp->child, scope_name, count_label, count, count_str, needs_return, pointer);
-            needs_return = produce(tmp->brother, scope_name, count_label, count, count_str, needs_return, pointer);  
+            needs_return = produce(tmp->child, scope_name, count_label, count, needs_return, pointer);
+            needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return, pointer);  
             break;      
     }
     return needs_return;
@@ -137,7 +137,7 @@ void produce_declarations(char* scope_name){
 
 }
 
-int produce_statement(Structure* node, char* scope_name, int* count_label,int* count, int* count_str, Str_meta4* pointer){
+int produce_statement(Structure* node, char* scope_name, int* count_label,int* count, Str_meta4* pointer){
     char* expr = (char*) malloc(sizeof(char)*50);
 
     int label_true,label_false,label_end;
@@ -159,11 +159,11 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
         printf("br i1 %s, label %%label%d, label %%label%d\n",expr,label_true,label_end);
         }
         printf("label%d:\n",label_true);
-        produce(node->child->brother->child,scope_name,count_label,count, count_str, 0, pointer);
+        produce(node->child->brother->child,scope_name,count_label,count, 0, pointer);
         printf("br label %%label%d\n",label_end);
         if(node->child->brother->brother->child != NULL){
             printf("label%d:\n",label_false);
-            produce(node->child->brother->brother->child,scope_name,count_label,count, count_str, 0, pointer);
+            produce(node->child->brother->brother->child,scope_name,count_label,count, 0, pointer);
             printf("br label %%label%d\n",label_end);
         }
         printf("label%d:\n",label_end);
@@ -181,7 +181,8 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
             printf("br i1 %s, label %%label%d, label %%label%d\n",expr,label_block,label_end);
             
             printf("label%d:\n",label_block);
-            produce(node->child->brother->child,scope_name,count_label, count, count_str, 0, pointer);
+
+            produce(node->child->brother->child,scope_name,count_label, count, 0, pointer);
             printf("br label %%label%d\n",label_condition);
 
         }else{
@@ -190,7 +191,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
             printf("br label %%label%d\n",label_block);
             
             printf("label%d:\n",label_block);
-            produce(node->child->child,scope_name,count_label,count, count_str, 0, pointer);
+            produce(node->child->child,scope_name,count_label,count, 0, pointer);
             printf("br label %%label%d\n",label_block);
         }
         printf("label%d:\n",label_end);
@@ -207,7 +208,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
     }else if(strcmp(node->token->val, "Print")==0){
         expr = produce_expression(node->child,scope_name,count);
         if(node->child->type == strlit){
-            int size = change_str(node->child,scope_name,pointer, count_str);
+            int size = node->child->is_global;
             char* str = (char*) malloc(sizeof(char)*50);
             sprintf(str,"%%.%d",*count);
             *count = *count + 1;
@@ -486,7 +487,7 @@ void produce_parse_args(Structure *node, char* scope_name, int* count){
     printf("store i32 %s, i32* %%%s\n", tmp5, node->child->token->val);
 }
 
-void init_produce(){
+void init_produce(Structure *node, int* count_str){
     printf("declare i32 @printf(i8*, ...)\n");
     printf("declare i32 @atoi(i8*)\n");
     printf("@.true = private unnamed_addr constant [6 x i8] c\"true\\0A\\00\"\n");
@@ -494,60 +495,77 @@ void init_produce(){
     printf("@.integer = private unnamed_addr constant [4 x i8] c\"%%d\\0A\\00\"\n");
     printf("@.string = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"\n");
     printf("@.float = private unnamed_addr constant [6 x i8] c\".08f\\0A\\00\"\n");
+    Str_meta4 *pointer = (Str_meta4*)malloc(sizeof(Str_meta4));
+    change_str(node, pointer, count_str);
+    Str_meta4 *aux = pointer->next;
+    while(aux != NULL){
+        printf("%s", aux->text);
+        aux = aux->next;
+    }
 }
 
-int change_str(Structure* node, char* scope_name, Str_meta4* pointer, int* count_str){
-    int str_size = strlen(node->token->val);
-    char* str_final = (char*) malloc(sizeof(char)*200);
-    int j=0;
-    for(int i=0; i<str_size-1; i++){
-        if(node->token->val[i] == '\\' ){
-            switch (node->token->val[i+1]){
-            case 'f':
-                str_final[++j] = '0';
-                str_final[++j] = 'C';
-                break;
-            case 'n':
-                str_final[++j] = '0';
-                str_final[++j] = 'A';
-                break;
-            case 'r':
-                str_final[++j] = '0';
-                str_final[++j] = 'D';
-                break;
-            case 't':
-                str_final[++j] = '0';
-                str_final[++j] = '9';
-                break;
-            case '\\':
-                str_final[++j] = '5';
-                str_final[++j] = 'C';
-                break;
-            case '\"':
-                str_final[++j] = '2';
-                str_final[++j] = '2';
-                break;
-            default:
-                break;
+void change_str(Structure* node, Str_meta4 *pointer, int* count_str){
+    if(node == NULL) return;
+    if(node->type == Statement){
+        if(strcmp(node->token->val, "Print")==0){
+            if(node->child->type == reallit){
+                int str_size = strlen(node->child->token->val);
+                char* str_final = (char*) malloc(sizeof(char)*200);
+                int j=0;
+                for(int i=0; i<str_size-1; i++){
+                    if(node->child->token->val[i] == '\\' ){
+                        switch (node->child->token->val[i+1]){
+                        case 'f':
+                            str_final[++j] = '0';
+                            str_final[++j] = 'C';
+                            break;
+                        case 'n':
+                            str_final[++j] = '0';
+                            str_final[++j] = 'A';
+                            break;
+                        case 'r':
+                            str_final[++j] = '0';
+                            str_final[++j] = 'D';
+                            break;
+                        case 't':
+                            str_final[++j] = '0';
+                            str_final[++j] = '9';
+                            break;
+                        case '\\':
+                            str_final[++j] = '5';
+                            str_final[++j] = 'C';
+                            break;
+                        case '\"':
+                            str_final[++j] = '2';
+                            str_final[++j] = '2';
+                            break;
+                        default:
+                            break;
+                        }
+                    }else
+                    {
+                        str_final[j] = node->child->token->val[i];
+                    }
+                    j += 1;   
+                }
+                str_final[j+1] = '\0';
+                Str_meta4* new = (Str_meta4*) malloc(sizeof(Str_meta4));
+                char* aux = (char*) malloc(sizeof(char)*50);
+                sprintf(aux,"@.str%d",*count_str);
+                *count_str = *count_str + 1;
+                sprintf(new->text, "%s = private unnamed_addr constant [%d x i8] c%s\\0A\\00\"\n",aux,(int) strlen(str_final)+1,str_final);
+                new->next = NULL;
+                Str_meta4* new2 = pointer;
+                while(new2->next != NULL){
+                    new2 = new2->next;
+                }
+                new2->next = new;
+                strcpy(node->child->token->val, aux);
+                node->child->is_global = (int) strlen(str_final)+1;
             }
-        }else
-        {
-            str_final[j] = node->token->val[i];
         }
-        j += 1;   
+    }else{
+        change_str(node->child, pointer, count_str);
     }
-    str_final[j+1] = '\0';
-    Str_meta4* new = (Str_meta4*) malloc(sizeof(Str_meta4));
-    char* aux = (char*) malloc(sizeof(char)*50);
-    sprintf(aux,"@.str%d",*count_str);
-    *count_str = *count_str + 1;
-    sprintf(new->text, "%s = private unnamed_addr constant [%d x i8] c%s\\0A\\00\"\n",aux,(int) strlen(str_final)+1,str_final);
-    new->next = NULL;
-    Str_meta4* new2 = pointer;
-    while(new2->next != NULL){
-        new2 = new2->next;
-    }
-    new2->next = new;
-    strcpy(node->token->val, aux);
-    return (int) strlen(str_final)+1;
+    change_str(node->brother, pointer, count_str);
 }
