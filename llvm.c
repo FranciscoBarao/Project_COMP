@@ -386,17 +386,28 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
         return tmp;  
     }else{
         //casos primitivos, retorna valor || ex : add var , '2' <--
-        if(node->token->val[0] == '.'){
-            char *float_str = (char *)malloc(sizeof(char) * 100);
-            sprintf(float_str, "0%s", node->token->val);
-            return float_str;
-        }
-        int str_size = strlen(node->token->val); 
-        char *second_string = (char *)malloc(sizeof(char) * 100);
-        for(int i=0; i<str_size-1; i++){
-            if(node->token->val[i] == '.' && (node->token->val[i+1] == 'e' || node->token->val[i+1] == 'E')){
-
+        if(node->value_type == float32){
+            if(node->token->val[0] == '.'){
+                char *float_str = (char *)malloc(sizeof(char) * 100);
+                sprintf(float_str, "0%s", node->token->val);
+                return float_str;
             }
+            int str_size = strlen(node->token->val); 
+            char *second_string = (char *)malloc(sizeof(char) * 100);
+            int j = 0;
+            for(int i=0; i<str_size; i++){
+                if((node->token->val[i] == 'e' || node->token->val[i] == 'E')){
+                    second_string[j] = '.';
+                    second_string[j+1] = '0';
+                    second_string[j+2] = 'e';
+                    j += 2;
+                }else{
+                    second_string[j] = node->token->val[i];
+                }
+                j += 1;
+            }
+            second_string[j+1] = '\0';
+            return second_string;
         }
         return node->token->val;
     }

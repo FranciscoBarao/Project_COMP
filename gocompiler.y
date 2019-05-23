@@ -450,8 +450,8 @@ int main(int argc, char* argv[]){
         }else{
             produce_declarations("global");
             produce(myprogram,"global",&(int){0},&(int){0},0);
-            printf("declare i32 @printf(i8*, ...)");
-            printf("declare i32 @atoi(i8*)");
+            printf("declare i32 @printf(i8*, ...)\n");
+            printf("declare i32 @atoi(i8*)\n");
             free_tree(myprogram);
         }
     }
