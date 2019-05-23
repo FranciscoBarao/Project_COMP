@@ -253,7 +253,11 @@ int check_statement(Structure* node ,char* scope_name){
             }
         }
     }else if(strcmp(node->token->val, "Print") == 0){
-        check_expression(node->child, scope_name);
+        basic_type tmp = check_expression(node->child, scope_name);
+        if (tmp == undef || tmp == none){
+            sprintf(node->error, "Line %d, column %d: Incompatible type %s in %s statement\n",node->token->l,node->token->col,type_to_string(tmp),expression_to_string(node));
+            value_to_return += -1;
+        }
     }
     else{
         check_second_run(node->child, scope_name);

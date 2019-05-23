@@ -38,6 +38,10 @@ int produce(Structure *node, char* scope_name,int* count_label, int* count, int 
             produce_parse_args(node, scope_name, count);
             needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return );  
             break;
+        case Call:
+            produce_call(node,scope_name,count);
+            produce(tmp->brother, scope_name, count_label, count, needs_return );
+            break;
         default :
             needs_return = produce(tmp->child, scope_name, count_label, count, needs_return );
             needs_return = produce(tmp->brother, scope_name, count_label, count, needs_return );  
@@ -290,7 +294,9 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
         return "";
     }else if(node->type == Call){
         
-       if(node->child->brother == NULL) sprintf(str+strlen(str),")\n");
+       if(node->child->brother == NULL) {
+           sprintf(str+strlen(str),")\n");
+           }
         for(Structure* ptr = node->child->brother;ptr != NULL;ptr = ptr->brother){
             char* expr = produce_expression(ptr, scope_name, count);
             if(ptr->brother == NULL){
@@ -301,10 +307,13 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
         }   
 
         sprintf(tmp,"%%.%d",*count);
-        printf("%s = call %s @%s(%s",tmp,type_to_llvm(node->value_type),node->child->token->val,str);
+        if(node->value_type == none){
+            printf("call %s @%s(%s",type_to_llvm(node->value_type),node->child->token->val,str);
+        }else{
+            printf("%s = call %s @%s(%s",tmp,type_to_llvm(node->value_type),node->child->token->val,str);
+            *count = *count + 1;
+        }
         
-
-        *count = *count + 1;
         return tmp;
     }
     
@@ -587,4 +596,30 @@ void change_str(Structure* node, Str_meta4 *pointer, int* count_str){
         change_str(node->child, pointer, count_str);
     }
     change_str(node->brother, pointer, count_str);
+}
+
+void produce_call(Structure* node,char* scope_name, int* count){
+    char* str = (char*) malloc(sizeof(char)*50);
+    char* tmp = (char*) malloc(sizeof(char)*50);
+
+    if(node->child->brother == NULL) {
+           sprintf(str+strlen(str),")\n");
+           }
+        for(Structure* ptr = node->child->brother;ptr != NULL;ptr = ptr->brother){
+            char* expr = produce_expression(ptr, scope_name, count);
+            if(ptr->brother == NULL){
+                sprintf(str+strlen(str),"%s %s)\n",type_to_llvm(ptr->value_type),expr);
+            }else{
+                sprintf(str+strlen(str),"%s %s, ",type_to_llvm(ptr->value_type),expr);
+            }
+        }   
+
+         sprintf(tmp,"%%.%d",*count);
+        if(node->value_type == none){
+            printf("call %s @%s(%s",type_to_llvm(node->value_type),node->child->token->val,str);
+        }else{
+           
+            printf("%s = call %s @%s(%s",tmp,type_to_llvm(node->value_type),node->child->token->val,str);
+            *count = *count + 1;
+        }
 }

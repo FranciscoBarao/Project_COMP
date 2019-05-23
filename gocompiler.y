@@ -31,7 +31,9 @@
 //Keyword
 %token<node>PACKAGE
 %token<value>RETURN
-%token<node>ELSE IF FOR VAR PRINT FUNC 
+%token<node>ELSE IF FOR VAR 
+%token<value>PRINT 
+%token<node>FUNC 
 %token<value>PARSEINT 
 %token<node>CMDARGS RESERVED
 %token flag
@@ -207,8 +209,8 @@ union_statement:
     ;
 
 str_statement:
-        PRINT LPAR expression RPAR                              {$$=create_node("Print",0,0,Statement, $3);}
-    |   PRINT LPAR strlit_state RPAR                            {$$=create_node("Print",0,0,Statement, $3);}
+        PRINT LPAR expression RPAR                              {$$=create_node("Print",$1.col,$1.l,Statement, $3);}
+    |   PRINT LPAR strlit_state RPAR                            {$$=create_node("Print",$1.col,$1.l,Statement, $3);}
     ;
 
 strlit_state:

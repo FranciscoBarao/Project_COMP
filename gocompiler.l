@@ -79,7 +79,7 @@ letter          [a-zA-Z_]+
 "if"            {if(tokens) printf("IF\n"); col(); semicollon(0); if(!tokens) return IF;}
 "for"           {if(tokens) printf("FOR\n"); col(); semicollon(0); if(!tokens) return FOR;}
 "var"           {if(tokens) printf("VAR\n"); col(); semicollon(0); if(!tokens) return VAR;}
-"fmt.Println"   {if(tokens) printf("PRINT\n"); col(); semicollon(0); if(!tokens) return PRINT;}
+"fmt.Println"   {if(tokens) printf("PRINT\n"); col(); semicollon(0); if(!tokens){identifier_to_token(); return PRINT;}}
 "func"          {if(tokens) printf("FUNC\n"); col(); semicollon(0); if(!tokens) return FUNC;} 
 "strconv.Atoi"  {if(tokens) printf("PARSEINT\n"); col(); semicollon(0); if(!tokens){identifier_to_token(); return PARSEINT;}}
 "os.Args"       {if(tokens) printf("CMDARGS\n"); col(); semicollon(0); if(!tokens) return CMDARGS;}
