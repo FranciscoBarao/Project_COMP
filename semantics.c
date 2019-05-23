@@ -47,7 +47,9 @@ int check_second_run(Structure *node, char* scope_name ){ //Second run of tree
             is_error += check_second_run(tmp->brother, scope_name);  
             break;
         case ParseArgs:
+            printf("%s\n", node->token->val);
             node->value_type = check_parseArgs(tmp, scope_name);
+            printf("%s\n",type_to_string(node->child->value_type) );
             is_error += check_second_run(tmp->brother, scope_name);  
             break;
         case Call: //Function Invocation 
@@ -207,7 +209,7 @@ basic_type check_parseArgs(Structure* node ,char* scope_name){
         basic_type temp = check_expression(node->child->brother,scope_name);
         //Int  -> Atoi (args[int])
         if(id->type == integer && temp == integer){
-            node->value_type = integer;
+            node->child->value_type = integer;
             return integer;
         } 
         else{
