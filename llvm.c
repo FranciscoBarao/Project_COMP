@@ -148,13 +148,16 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
 
         if(node->child->brother->brother->child != NULL){
             label_true = *count_label;
-            label_false = *count_label = *count_label+1;
-            label_end = *count_label = *count_label+1;
+            label_false = *count_label + 1;
+            label_end = *count_label + 2;
+            *count_label = *count_label+3;
 
         printf("br i1 %s, label %%label%d, label %%label%d\n",expr,label_true,label_false);
         }else{
             label_true = *count_label;
-            label_end = *count_label = *count_label+1;
+            label_end = *count_label + 1;
+            *count_label = *count_label+2;
+
         
         printf("br i1 %s, label %%label%d, label %%label%d\n",expr,label_true,label_end);
         }
@@ -172,8 +175,9 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
     }else if(strcmp(node->token->val, "For")==0){
         if(strcmp(node->child->token->val,"Block") != 0){
             label_condition = *count_label;
-            label_block = *count_label = *count_label+1; 
-            label_end = *count_label = *count_label+1;
+            label_block = *count_label + 1;
+            label_end = *count_label + 2;
+            *count_label = *count_label+3;
             
             printf("br label %%label%d\n",label_condition);
             printf("label%d:\n",label_condition);
@@ -187,7 +191,8 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
 
         }else{
             label_block = *count_label;
-            label_end = *count_label = *count_label+1;
+            label_end = *count_label + 1;
+            *count_label = *count_label+2;
             printf("br label %%label%d\n",label_block);
             
             printf("label%d:\n",label_block);
@@ -458,8 +463,6 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
 }
 
 void produce_parse_args(Structure *node, char* scope_name, int* count){
-    //char* expr = (char*) malloc(sizeof(char)*150);
-    //expr = produce_expression(node->child, scope_name, count);
 
     char* expr_brother = (char*) malloc(sizeof(char)*150);
     expr_brother = produce_expression(node->child->brother, scope_name, count);
@@ -562,7 +565,6 @@ void change_str(Structure* node, Str_meta4 *pointer, int* count_str){
                 new2->next = new;
                 strcpy(node->child->token->val, aux);
                 node->child->is_global = (int) strlen(str_final)+1;
-                printf("fdsagasdgas\n");
             }
         }else{
             change_str(node->child, pointer, count_str);
