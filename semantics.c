@@ -290,6 +290,7 @@ int check_variable(Structure* node ,char* scope_name, char *str, basic_type t){
         sprintf(node->error, "Line %d, column %d: Symbol %s already defined\n",node->token->l,node->token->col,node->token->val);
         return -1;
     }else{
+        node->value_type = t;
         if(strcmp(scope_name, "global") == 0){
             new->is_used = 1;
         }
