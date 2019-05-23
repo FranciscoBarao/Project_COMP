@@ -217,7 +217,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
             char* str = (char*) malloc(sizeof(char)*50);
             sprintf(str,"%%.%d",*count);
             *count = *count + 1;
-            printf("%s = getelementptr [%d x i8], [%d x i8]* %s, i64 0, i64 0\n", str, size, size, node->child->token->val);
+            printf("%s = getelementptr [%d x i8], [%d x i8]* %s,  i32 0,  i32 0\n", str, size, size, node->child->token->val);
             printf("call i32 (i8*, ...) @printf(i8* %s)\n", str);
             return 0;
         }
@@ -231,7 +231,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
             char* text_true = (char*) malloc(sizeof(char)*50);
             sprintf(text_true,"%%.%d",*count);
             *count = *count + 1;
-            printf("%s = getelementptr [4 x i8], [4 x i8]* @.true, i64 0, i64 0\n", text_true);
+            printf("%s = getelementptr [4 x i8], [4 x i8]* @.true,  i32 0,  i32 0\n", text_true);
             printf("call i32 (i8*, ...) @printf(i8* %s)\n", text_true);
             printf("br label %%label%d\n",label_end);
             printf("label%d:\n",label_false);
@@ -239,7 +239,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
             char* text_false = (char*) malloc(sizeof(char)*50);
             sprintf(text_false,"%%.%d",*count);
             *count = *count + 1;
-            printf("%s = getelementptr [4 x i8], [4 x i8]* @.false, i64 0, i64 0\n", text_false);
+            printf("%s = getelementptr [4 x i8], [4 x i8]* @.false,  i32 0,  i32 0\n", text_false);
             printf("call i32 (i8*, ...) @printf(i8* %s)\n", text_false);
             printf("br label %%label%d\n",label_end);
             printf("label%d:\n",label_end);
@@ -250,16 +250,16 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
         *count = *count + 1;
         switch (node->child->value_type){
             case integer:
-                    printf("%s = getelementptr [4 x i8], [4 x i8]* @.integer, i64 0, i64 0\n", str);
+                    printf("%s = getelementptr [4 x i8], [4 x i8]* @.integer,  i32 0,  i32 0\n", str);
                 break;
             case float32:
-                    printf("%s = getelementptr [4 x i8], [4 x i8]* @.float, i64 0, i64 0\n", str);
+                    printf("%s = getelementptr [6 x i8], [6 x i8]* @.float,  i32 0,  i32 0\n", str);
                 break;
             case string:
-                    printf("%s = getelementptr [4 x i8], [4 x i8]* @.string, i64 0, i64 0\n", str);
+                    printf("%s = getelementptr [4 x i8], [4 x i8]* @.string,  i32 0,  i32 0\n", str);
                 break;
             default:
-                printf("%s = getelementptr [4 x i8], [4 x i8]* @.string, i64 0, i64 0\n", str);
+                printf("%s = getelementptr [4 x i8], [4 x i8]* @.string,  i32 0,  i32 0\n", str);
                 break;
 
         }
@@ -355,15 +355,14 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
 
         }else if(strcmp(node->token->val, "Minus")==0){
             if(node->child->value_type == float32){
-               printf("fsub %s 0, %s\n",type_to_llvm(node->value_type),expr1);   
+               printf("fsub %s 0.0, %s\n",type_to_llvm(node->value_type),expr1);   
             }else{
                 printf("sub %s 0, %s\n",type_to_llvm(node->value_type),expr1);   
             }
-            printf("sub %s 0, %s\n",type_to_llvm(node->value_type),expr1);   
 
         }else if(strcmp(node->token->val, "Plus")==0){
             if(node->child->value_type == float32){
-                printf("fadd %s 0, %s\n",type_to_llvm(node->value_type),expr1);   
+                printf("fadd %s 0.0, %s\n",type_to_llvm(node->value_type),expr1);   
             }else{
                 printf("add %s 0, %s\n",type_to_llvm(node->value_type),expr1);   
             }
@@ -436,6 +435,7 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
     }else{
         //casos primitivos, retorna valor || ex : add var , '2' <--
         if(node->value_type == float32){
+            int needs_dot = 1;
             if(node->token->val[0] == '.'){
                 char *float_str = (char *)malloc(sizeof(char) * 100);
                 sprintf(float_str, "0%s", node->token->val);
@@ -446,6 +446,7 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
             int j = 0;
             for(int i=0; i<str_size; i++){
                 if((node->token->val[i] == 'e' || node->token->val[i] == 'E')){
+                    needs_dot = 0;
                     second_string[j] = '.';
                     second_string[j+1] = '0';
                     second_string[j+2] = 'e';
@@ -455,8 +456,13 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
                 }
                 j += 1;
             }
+            if(needs_dot == 1){
+                second_string[++j] = '.';
+                second_string[++j] = '0';
+            }
             second_string[j+1] = '\0';
             return second_string;
+
         }
         return node->token->val;
     }
@@ -478,7 +484,7 @@ void produce_parse_args(Structure *node, char* scope_name, int* count){
     char* tmp3 = (char*) malloc(sizeof(char)*30);
     sprintf(tmp3,"%%.%d",*count);
     *count = *count + 1;
-    printf("%s = getelementptr inbounds i8*, i8** %s, i64 %s\n", tmp3, tmp2, expr_brother);
+    printf("%s = getelementptr inbounds i8*, i8** %s,  i32 %s\n", tmp3, tmp2, expr_brother);
     char* tmp4 = (char*) malloc(sizeof(char)*30);
     sprintf(tmp4,"%%.%d",*count);
     *count = *count + 1;
