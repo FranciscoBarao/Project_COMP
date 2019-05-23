@@ -91,9 +91,7 @@ void produce_header(Structure* node, char* scope_name){
 
 void produce_declarations(char* scope_name){
     //Percorrer tabela simbolos e dar external global ou alloca
-    Special_element *special = (Special_element*) malloc(sizeof(Special_element));
     Scope_element *scope = get_scope(scope_name);
-    int i = scope->number_of_params;
 
     char* tmp = (char*) malloc(sizeof(char)*50);
     if(scope != NULL){
@@ -242,6 +240,10 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
             case string:
                     printf("%s = getelementptr [4 x i8], [4 x i8]* @.string, i64 0, i64 0\n", str);
                 break;
+            default:
+                printf("%s = getelementptr [4 x i8], [4 x i8]* @.string, i64 0, i64 0\n", str);
+                break;
+
         }
         printf("call i32 (i8*, ...) @printf(i8* %s, %s %s)\n", str, type_to_llvm(node->child->value_type), expr);
     }
@@ -419,8 +421,9 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
 }
 
 void produce_parse_args(Structure *node, char* scope_name, int* count){
-    char* expr = (char*) malloc(sizeof(char)*150);
-    expr = produce_expression(node->child, scope_name, count);
+    //char* expr = (char*) malloc(sizeof(char)*150);
+    //expr = produce_expression(node->child, scope_name, count);
+
     char* expr_brother = (char*) malloc(sizeof(char)*150);
     expr_brother = produce_expression(node->child->brother, scope_name, count);
     char* tmp = (char*) malloc(sizeof(char)*30);
@@ -444,7 +447,7 @@ void produce_parse_args(Structure *node, char* scope_name, int* count){
     sprintf(tmp5,"%%.%d",*count);
     *count = *count + 1;
     printf("%s = call i32 @atoi(i8* %s)\n", tmp5, tmp4);
-    printf("store i32 %s, i32* %s\n", tmp5, expr);
+    printf("store i32 %s, i32* %%%s\n", tmp5, node->child->token->val);
 }
 
 void init_produce(){

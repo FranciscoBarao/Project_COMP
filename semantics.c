@@ -47,9 +47,7 @@ int check_second_run(Structure *node, char* scope_name ){ //Second run of tree
             is_error += check_second_run(tmp->brother, scope_name);  
             break;
         case ParseArgs:
-            printf("%s\n", node->token->val);
             node->value_type = check_parseArgs(tmp, scope_name);
-            printf("%s\n",type_to_string(node->child->value_type) );
             is_error += check_second_run(tmp->brother, scope_name);  
             break;
         case Call: //Function Invocation 

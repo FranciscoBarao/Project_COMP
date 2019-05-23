@@ -21,9 +21,9 @@ make_llvm: Test.c
 	clang-3.9 -S -emit-llvm Test.c
 
 run_test:
-		./main < Test > output.ll
+		./main > output.ll
 
-run_lli:	output.ll
+run_lli: output.ll
 		lli-3.9 output.ll 2
 
 clean: 
