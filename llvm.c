@@ -212,7 +212,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
             char* str = (char*) malloc(sizeof(char)*50);
             sprintf(str,"%%.%d",*count);
             *count = *count + 1;
-            printf("%s = getelementptr [4 x i8], [%d x i8]* %s, i64 0, i64 0\n", str, size, node->child->token->val);
+            printf("%s = getelementptr [%d x i8], [%d x i8]* %s, i64 0, i64 0\n", str, size, size, node->child->token->val);
             printf("call i32 (i8*, ...) @printf(i8* %s)\n", str);
             return 0;
         }
@@ -508,7 +508,7 @@ void change_str(Structure* node, Str_meta4 *pointer, int* count_str){
     if(node == NULL) return;
     if(node->type == Statement){
         if(strcmp(node->token->val, "Print")==0){
-            if(node->child->type == reallit){
+            if(node->child->type == strlit){
                 int str_size = strlen(node->child->token->val);
                 char* str_final = (char*) malloc(sizeof(char)*200);
                 int j=0;
@@ -562,7 +562,6 @@ void change_str(Structure* node, Str_meta4 *pointer, int* count_str){
                 new2->next = new;
                 strcpy(node->child->token->val, aux);
                 node->child->is_global = (int) strlen(str_final)+1;
-                printf("fdsagasdgas\n");
             }
         }else{
             change_str(node->child, pointer, count_str);
