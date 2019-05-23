@@ -252,6 +252,8 @@ int check_statement(Structure* node ,char* scope_name){
                 value_to_return += -1;
             }
         }
+    }else if(strcmp(node->token->val, "Print") == 0){
+        check_expression(node->child, scope_name);
     }
     else{
         check_second_run(node->child, scope_name);
