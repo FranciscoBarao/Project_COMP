@@ -450,7 +450,13 @@ int main(int argc, char* argv[]){
         }else{
             init_produce();
             produce_declarations("global");
-            produce(myprogram,"global",&(int){0},&(int){0},0);
+            Str_meta4* pointer = (Str_meta4*) malloc(sizeof(Str_meta4));
+            produce(myprogram,"global",&(int){0},&(int){0}, &(int){0},0,pointer);
+            Str_meta4 *aux = pointer->next;
+            while(aux != NULL){
+                printf("%s", aux->text);
+                aux = aux->next;
+            }
             free_tree(myprogram);
         }
     }

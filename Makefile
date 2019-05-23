@@ -17,8 +17,8 @@ compile_yacc: gocompiler.l gocompiler.y
 compile_main: y.tab.c lex.yy.c functions.c semantics.c llvm.c
 	gcc -o main y.tab.c lex.yy.c functions.c semantics.c llvm.c
 
-make_llvm: Test.c
-	clang-3.9 -S -emit-llvm Test.c
+make_llvm: Meta4/Test.c
+	clang-3.9 -S -emit-llvm Meta4/Test.c
 
 run_test:
 		./main > output.ll

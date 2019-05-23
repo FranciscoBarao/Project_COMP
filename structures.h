@@ -66,4 +66,10 @@ typedef struct _s10{
   struct _s10 *next;
 } Call_types;
 
+
+typedef struct _s4{
+  char text[300];
+  struct _s4 *next;
+} Str_meta4;
+
 #endif
