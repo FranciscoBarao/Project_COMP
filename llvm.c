@@ -236,7 +236,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
 
     }else if(strcmp(node->token->val, "Print")==0){
         expr = produce_expression(node->child,scope_name,count);
-        if(node->child->type == strlit){
+        if(node->child->type == strlit || node->child->type == intlit){
             int size = node->child->is_global;
             char* str = (char*) malloc(sizeof(char)*50);
             sprintf(str,"%%.%d",*count);
@@ -547,6 +547,7 @@ void init_produce(Structure *node, int* count_str){
     printf("@.integer = private unnamed_addr constant [4 x i8] c\"%%d\\0A\\00\"\n");
     printf("@.string = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"\n");
     printf("@.float = private unnamed_addr constant [7 x i8] c\"%%.08f\\0A\\00\"\n");
+    printf("@.empty = private unnamed_addr constant [2 x i8] c\"\\0A\\00\"\n");
     Str_meta4 *pointer = (Str_meta4*)malloc(sizeof(Str_meta4));
     change_str(node, pointer, count_str);
     Str_meta4 *aux = pointer->next;
@@ -560,7 +561,7 @@ void change_str(Structure* node, Str_meta4 *pointer, int* count_str){
     if(node == NULL) return;
     if(node->type == Statement){
         if(strcmp(node->token->val, "Print")==0){
-            if(node->child->type == strlit){
+            if(node->child->type == strlit || node->child->type == intlit){
                 int random_stuff = 0;
                 int str_size = strlen(node->child->token->val);
                 char* str_final = (char*) malloc(sizeof(char)*200);
