@@ -236,7 +236,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
 
     }else if(strcmp(node->token->val, "Print")==0){
         expr = produce_expression(node->child,scope_name,count);
-        if(node->child->type == strlit || node->child->type == intlit){
+        if(node->child->type == strlit || node->child->type == intlit || node->child->type == reallit){
             int size = node->child->is_global;
             char* str = (char*) malloc(sizeof(char)*50);
             sprintf(str,"%%.%d",*count);
@@ -477,12 +477,23 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
             int j = 0;
             for(int i=0; i<str_size; i++){
                 if((node->token->val[i] == 'e' || node->token->val[i] == 'E')){
+                    if(needs_dot == 0){
+                        second_string[j] = node->token->val[i];
+                    }else{
+                        needs_dot = 0;
+                        second_string[j] = '.';
+                        second_string[j+1] = '0';
+                        second_string[j+2] = 'e';
+                        j += 2;
+                    }
+                }else if(node->token->val[i] == '.'){
                     needs_dot = 0;
-                    second_string[j] = '.';
-                    second_string[j+1] = '0';
-                    second_string[j+2] = 'e';
-                    j += 2;
-                }else{
+                    second_string[j] = node->token->val[i];
+                    if(node->token->val[i+1] != '0'){
+                        second_string[++j] = '0';
+                    }
+                }
+                else{
                     second_string[j] = node->token->val[i];
                 }
                 j += 1;
@@ -561,7 +572,7 @@ void change_str(Structure* node, Str_meta4 *pointer, int* count_str){
     if(node == NULL) return;
     if(node->type == Statement){
         if(strcmp(node->token->val, "Print")==0){
-            if(node->child->type == strlit || node->child->type == intlit){
+            if(node->child->type == strlit){
                 int random_stuff = 0;
                 int str_size = strlen(node->child->token->val);
                 char* str_final = (char*) malloc(sizeof(char)*200);
@@ -603,12 +614,12 @@ void change_str(Structure* node, Str_meta4 *pointer, int* count_str){
                         str_final[j] = node->child->token->val[i];
                         str_final[++j] = '%';
                         random_stuff -= 1;
-                    }else
-                    {
+                    }else{
                         str_final[j] = node->child->token->val[i];
                     }
                     j += 1;   
                 }
+                str_final[++j] = node->token->val[str_size];
                 str_final[j] = '\0';
                 Str_meta4* new = (Str_meta4*) malloc(sizeof(Str_meta4));
                 char* aux = (char*) malloc(sizeof(char)*50);
@@ -623,6 +634,84 @@ void change_str(Structure* node, Str_meta4 *pointer, int* count_str){
                 new2->next = new;
                 strcpy(node->child->token->val, aux);
                 node->child->is_global = str_size-random_stuff;
+            }else if(node->child->type == reallit){
+                char *second_string = (char *)malloc(sizeof(char) * 100);
+                int str_size = strlen(node->child->token->val); 
+                int needs_dot = 1;
+                int size = 0;
+                int adding_stuff = 0;
+                if(node->child->token->val[0] == '.'){
+                    sprintf(second_string, "0%s", node->child->token->val);
+                    adding_stuff = 3;
+                }else{
+                    for(int i=0; i<str_size; i++){
+                        if((node->child->token->val[i] == 'e' || node->child->token->val[i] == 'E')){
+                            if(needs_dot == 0){
+                                second_string[size] = node->child->token->val[i];
+                            }else{
+                                second_string[size] = '.';
+                                second_string[size+1] = '0';
+                                second_string[size+2] = 'e';
+                                needs_dot = 0;
+                                size += 2;
+                                adding_stuff = 4;
+                            }
+                        }else if(node->child->token->val[i] == '.'){
+                            needs_dot = 0;
+                            second_string[size] = node->child->token->val[i];
+                            if(node->child->token->val[i+1] != '0'){
+                                adding_stuff = 3;
+                                second_string[++size] = '0';
+                            }else{
+                                adding_stuff = 2;
+                            }
+                        }else{
+                            second_string[size] = node->child->token->val[i];
+                        }
+                        size += 1;
+                    }
+                    if(needs_dot == 1){
+                        second_string[++size] = '.';
+                        second_string[++size] = '0';
+                        size += 1;
+                        adding_stuff = 2;
+                    }
+                    second_string[size] = '\0';
+                }
+                Str_meta4* new = (Str_meta4*) malloc(sizeof(Str_meta4));
+                char* aux = (char*) malloc(sizeof(char)*50);
+                sprintf(aux,"@.str%d",*count_str);
+                *count_str = *count_str + 1;
+                sprintf(new->text, "%s = private unnamed_addr constant [%d x i8] c\"%s\\0A\\00\"\n",aux,str_size+adding_stuff,second_string);
+                new->next = NULL;
+                Str_meta4* new2 = pointer;
+                while(new2->next != NULL){
+                    new2 = new2->next;
+                }
+                new2->next = new;
+                strcpy(node->child->token->val, aux);
+                node->child->is_global = str_size+adding_stuff;
+            }else if(node->child->type == intlit){
+                int random_stuff = 2;
+                int str_size = strlen(node->child->token->val);
+                char* str_final = (char*) malloc(sizeof(char)*200);
+                for(int i=0; i<str_size; i++){
+                    str_final[i] = node->child->token->val[i];
+                }
+                str_final[str_size] = '\0';
+                Str_meta4* new = (Str_meta4*) malloc(sizeof(Str_meta4));
+                char* aux = (char*) malloc(sizeof(char)*50);
+                sprintf(aux,"@.str%d",*count_str);
+                *count_str = *count_str + 1;
+                sprintf(new->text, "%s = private unnamed_addr constant [%d x i8] c\"%s\\0A\\00\"\n",aux,str_size+random_stuff,str_final);
+                new->next = NULL;
+                Str_meta4* new2 = pointer;
+                while(new2->next != NULL){
+                    new2 = new2->next;
+                }
+                new2->next = new;
+                strcpy(node->child->token->val, aux);
+                node->child->is_global = str_size+random_stuff;
             }
         }else{
             change_str(node->child, pointer, count_str);
