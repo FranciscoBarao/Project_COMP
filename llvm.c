@@ -106,6 +106,7 @@ void produce_declarations(char* scope_name){
     Scope_element *scope = get_scope(scope_name);
 
     char* tmp = (char*) malloc(sizeof(char)*50);
+
     if(scope != NULL){
         Table_element *symbol_table = scope->variables;
         Table_element *aux;
@@ -133,12 +134,23 @@ void produce_declarations(char* scope_name){
                     }
             }else{
                 if(aux->type != function){
-                    if(index<scope->number_of_params){
+                    if(index < scope->number_of_params){
                         sprintf(tmp,"%d",index);
                         printf("%%%s = alloca %s\n",aux->name,type_to_llvm(aux->type));
                         printf("store %s %%%s, %s* %%%s\n",type_to_llvm(aux->type),tmp,type_to_llvm(aux->type),aux->name);
                     }else{
                         printf("%%%s = alloca %s\n",aux->name,type_to_llvm(aux->type));
+                        switch(aux->type){
+                            case integer:
+                                printf("store %s 0, %s* %%%s\n",type_to_llvm(aux->type),type_to_llvm(aux->type),aux->name);
+
+                            break;
+                            case float32:
+                                printf("store %s 0.0, %s* %%%s\n",type_to_llvm(aux->type),type_to_llvm(aux->type),aux->name);
+                            break;
+                        }
+
+                        
                     }
                     index++;
                 }
