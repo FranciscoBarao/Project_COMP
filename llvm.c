@@ -224,7 +224,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
 
     }else if(strcmp(node->token->val, "Print")==0){
         expr = produce_expression(node->child,scope_name,count);
-        if(node->child->type == strlit){
+        if(node->child->type == strlit || node->child->type == intlit){
             int size = node->child->is_global;
             char* str = (char*) malloc(sizeof(char)*50);
             sprintf(str,"%%.%d",*count);
@@ -548,7 +548,7 @@ void change_str(Structure* node, Str_meta4 *pointer, int* count_str){
     if(node == NULL) return;
     if(node->type == Statement){
         if(strcmp(node->token->val, "Print")==0){
-            if(node->child->type == strlit){
+            if(node->child->type == strlit || node->child->type == intlit){
                 int random_stuff = 0;
                 int str_size = strlen(node->child->token->val);
                 char* str_final = (char*) malloc(sizeof(char)*200);
