@@ -535,6 +535,7 @@ void init_produce(Structure *node, int* count_str){
     printf("@.integer = private unnamed_addr constant [4 x i8] c\"%%d\\0A\\00\"\n");
     printf("@.string = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"\n");
     printf("@.float = private unnamed_addr constant [7 x i8] c\"%%.08f\\0A\\00\"\n");
+    printf("@.empty = private unnamed_addr constant [2 x i8] c\"\\0A\\00\"\n");
     Str_meta4 *pointer = (Str_meta4*)malloc(sizeof(Str_meta4));
     change_str(node, pointer, count_str);
     Str_meta4 *aux = pointer->next;
