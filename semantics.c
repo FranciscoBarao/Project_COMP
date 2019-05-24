@@ -375,7 +375,19 @@ int check_error_expression(Structure *node, basic_type child_type, basic_type br
         }else{
             return 0;
         }
-    }else if(strcmp(node->token->val, "Add") == 0 || strcmp(node->token->val, "Sub") == 0 || strcmp(node->token->val, "Mul") == 0 || strcmp(node->token->val, "Div") == 0 || strcmp(node->token->val, "Mod") == 0){
+    }else if(strcmp(node->token->val, "Sub") == 0 || strcmp(node->token->val, "Mul") == 0 || strcmp(node->token->val, "Div") == 0){
+        if((child_type == integer && brother_type == integer) || (child_type == float32 && brother_type == float32)){
+            return 0;
+        }else{
+            return -1;
+        }
+    }else if(strcmp(node->token->val, "Mod") == 0){
+        if((child_type == integer && brother_type == integer)){
+            return 0;
+        }else{
+            return -1;
+        }
+    }else if(strcmp(node->token->val, "Add") == 0){
         if((child_type == integer && brother_type == integer) || (child_type == float32 && brother_type == float32) || (child_type == string && brother_type == string)){
             return 0;
         }else{
