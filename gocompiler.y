@@ -451,7 +451,7 @@ int main(int argc, char* argv[]){
             print_error_tree(myprogram);
         }else{
             init_produce(myprogram, &(int){0});
-            produce_declarations("global");
+            produce_declarations("global",&(int){0});
             produce(myprogram,"global",&(int){0}, &(int){0},0);
             free_tree(myprogram);
         }

@@ -16,10 +16,11 @@ int produce(Structure *node, char* scope_name,int* count_label, int* count, int 
             break;
         case FuncDecl:
             produce_header(tmp->child->child, tmp->child->child->token->val);
-            produce_declarations(tmp->child->child->token->val);
             *count = 0;
             *count_label = 0;
             needs_return = 0;
+            produce_declarations(tmp->child->child->token->val,count);
+            
             int n_return = produce(tmp->child, tmp->child->child->token->val, count_label, count, 0 );
             if(n_return==0){
                 switch (val_to_basic(node->child->child->brother->token->val)){
@@ -101,7 +102,7 @@ void produce_header(Structure* node, char* scope_name){
     }
 }
 
-void produce_declarations(char* scope_name){
+void produce_declarations(char* scope_name, int* count){
     //Percorrer tabela simbolos e dar external global ou alloca
     Scope_element *scope = get_scope(scope_name);
 
@@ -118,16 +119,16 @@ void produce_declarations(char* scope_name){
                     printf("@%s = global %s ",aux->name,type_to_llvm(aux->type));
                     switch(aux->type){
                         case integer:
-                        printf("0\n");
+                            printf("0\n");
                         break;
                         case boolean:
-                        printf("0\n");
+                            printf("0\n");
                         break;
                         case string:
-                        printf("null\n");
+                            printf("null\n");
                         break;
                         case float32:
-                        printf("0.0\n");
+                            printf("0.0\n");
                         break;
                         default:
                         break;
@@ -143,10 +144,18 @@ void produce_declarations(char* scope_name){
                         switch(aux->type){
                             case integer:
                                 printf("store %s 0, %s* %%%s\n",type_to_llvm(aux->type),type_to_llvm(aux->type),aux->name);
-
                             break;
                             case float32:
                                 printf("store %s 0.0, %s* %%%s\n",type_to_llvm(aux->type),type_to_llvm(aux->type),aux->name);
+                            break;
+                            case string:
+                                sprintf(tmp,"%%.%d",*count);
+                                *count = *count +1;
+                                printf("%s = getelementptr [1 x i8], [1 x i8]* @.empty,  i32 0,  i32 0\n", tmp);
+                                printf("store %s %s, %s* %%%s\n",type_to_llvm(aux->type), tmp, type_to_llvm(aux->type),aux->name);
+
+                            break;
+                            default:
                             break;
                         }
 
@@ -155,6 +164,21 @@ void produce_declarations(char* scope_name){
                     index++;
                 }
             }
+            if(strcmp(scope_name, "main")==0){
+                Scope_element *s = get_scope("global");
+                Table_element *sy = s->variables;
+                Table_element *au;
+                for(au=sy; au; au=au->next){
+                    if(au->type != function ){
+                        if(au->type == string){
+                            sprintf(tmp,"%%.%d",*count);
+                            *count = *count +1;
+                            printf("%s = getelementptr [1 x i8], [1 x i8]* @.empty,  i32 0,  i32 0\n", tmp);
+                            printf("store %s %s, %s* @%s\n",type_to_llvm(au->type), tmp, type_to_llvm(au->type),au->name);
+                        }
+                    }
+                }
+            }   
         } 
     }
     return;
@@ -547,7 +571,7 @@ void init_produce(Structure *node, int* count_str){
     printf("@.integer = private unnamed_addr constant [4 x i8] c\"%%d\\0A\\00\"\n");
     printf("@.string = private unnamed_addr constant [4 x i8] c\"%%s\\0A\\00\"\n");
     printf("@.float = private unnamed_addr constant [7 x i8] c\"%%.08f\\0A\\00\"\n");
-    printf("@.empty = private unnamed_addr constant [2 x i8] c\"\\0A\\00\"\n");
+    printf("@.empty = private unnamed_addr constant [1 x i8] c\"\\00\"\n");
     Str_meta4 *pointer = (Str_meta4*)malloc(sizeof(Str_meta4));
     change_str(node, pointer, count_str);
     Str_meta4 *aux = pointer->next;
