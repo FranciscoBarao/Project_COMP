@@ -4,11 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//Clang 3.8.1 -> segfaults appear on llvm
-
-//Void on factorial.. should be i32
-//store i32 .5 i32* %.0 -> should be %argument
-//%.0 = load void, void* %argument -> should be i32, i32*
 
 int produce(Structure *node, char* scope_name,int* count_label, int* count, int needs_return){
 
@@ -29,16 +24,16 @@ int produce(Structure *node, char* scope_name,int* count_label, int* count, int 
             if(n_return==0){
                 switch (val_to_basic(node->child->child->brother->token->val)){
                 case none:
-                    printf("ret void\n");
+                    printf("ret i32 0\n");
                     break;
                 case integer:
                     printf("ret i32 0\n");
                     break;
                 case float32:
-                    printf("ret double 0.0");
+                    printf("ret double 0.0\n");
                     break;
                 default:
-                    printf("ret void\n");
+                    printf("ret i32 0\n");
                     break;
                 }
             }
@@ -77,16 +72,14 @@ const char* type_to_llvm(basic_type t){
             return "double";
         case string:
             return "i8*";
-        case integer:
-            return "i32";
         default:
-            return "void";
+            return "i32";
     }
 }
 
-
 void produce_header(Structure* node, char* scope_name){
     if(strcmp(node->token->val,"main")==0){
+        
         printf("define %s @main(i32, i8**) {\n",type_to_llvm(val_to_basic(node->brother->token->val)));
     }else{
 
@@ -221,7 +214,7 @@ int produce_statement(Structure* node, char* scope_name, int* count_label,int* c
         printf("label%d:\n",label_end);
     }else if(strcmp(node->token->val, "Return")==0){
         if(node->child == NULL){
-            printf("ret void\n");
+            printf("ret i32 0\n");
         }else{
             expr = produce_expression(node->child,scope_name,count);
             printf("ret %s %s\n",type_to_llvm(node->child->value_type),expr);
@@ -489,6 +482,18 @@ char* produce_expression(Structure* node, char* scope_name, int* count){
             second_string[j+1] = '\0';
             return second_string;
 
+        }
+
+        if(node->value_type == integer){
+            char *t = (char *)malloc(sizeof(char) * 50);
+            if(node->token->val[0] == '0'){
+                if((node->token->val[1] == 'x' || node->token->val[1] == 'X')){
+                    sprintf(t, "%ld",strtol(node->token->val, NULL, 0));
+                }else{
+                    sprintf(t, "%ld",strtol(node->token->val,NULL,8));
+                }
+                return t;
+            }
         }
         return node->token->val;
     }

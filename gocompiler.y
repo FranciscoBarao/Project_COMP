@@ -456,6 +456,5 @@ int main(int argc, char* argv[]){
             free_tree(myprogram);
         }
     }
-    //free table too
     return 0;
 }
